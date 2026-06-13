@@ -2185,6 +2185,26 @@
         let selectedSize = '';
         let quantity = 1;
         let sliderInterval;
+
+        // ===================== GLOBAL FIREBASE (works for every visitor, not just admin) =====================
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyCbe7VF8AVO_MMRthXc4A7N_h2aTYujkaE",
+            authDomain: "vynox-d8699.firebaseapp.com",
+            projectId: "vynox-d8699",
+            storageBucket: "vynox-d8699.firebasestorage.app",
+            messagingSenderId: "937619479092",
+            appId: "1:937619479092:web:855819d825070a0f854861"
+        };
+        var db = null;
+        try {
+            if (typeof firebase !== 'undefined') {
+                if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+                db = firebase.firestore();
+            }
+        } catch (e) {
+            console.warn('Firebase init failed:', e);
+            db = null;
+        }
     let products = [
     // ===== FORMAL (12) =====
     { id: '1',  name: 'Classic White Shirt',       brand: 'Peter England',  description: 'Premium cotton formal white shirt',              price: 1299, originalPrice: 1899, discount: 32, image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&q=90', category: 'Formal' },
@@ -2576,11 +2596,42 @@
         // 🔑 Replace with your Razorpay Key ID from dashboard.razorpay.com
         const RAZORPAY_KEY = 'rzp_live_SjcxBKHMwcDPXp';
 
-        // 🔗 Replace with your Google Apps Script Web App URL
-        const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwsDz55xdP5d25UhQSys4u08uE9KyauJlwFhirTEB7lejIOE1pKsrTYLUj15r4HSNri/exec';
-
         // Internal state: what triggered the payment (buy_now or cart)
         let _paymentContext = null; // { type, product, amount, size, qty, brand, image }
+
+        // ─── Save a paid online order into the admin system (localStorage + Firebase) ───
+        function saveOnlineOrder(orderId, paymentId, name, phone, email, address, ctx) {
+            const items = (ctx.type === 'buy_now')
+                ? [{ id: ctx.id, name: ctx.product, brand: ctx.brand, size: ctx.size, qty: ctx.qty, price: ctx.price }]
+                : ctx.items.map(i => ({ id: i.id, name: i.name, brand: i.brand, size: i.size, qty: i.qty, price: i.price }));
+
+            const order = {
+                id: orderId,
+                customer: name,
+                phone: phone,
+                email: email,
+                address: address,
+                items: items,
+                total: ctx.amount,
+                type: 'online',
+                paymentMethod: 'online',
+                paymentId: paymentId,
+                date: new Date().toISOString()
+            };
+
+            // Save into the same order list the Admin Panel reads (Dashboard/Billing/Reports/Orders)
+            const orders = getOrders();
+            orders.push(order);
+            saveOrders(orders); // also pushes to Firebase if connected
+
+            // Deduct stock for purchased items
+            const prods = getAdminProducts();
+            items.forEach(item => {
+                const p = prods.find(x => String(x.id) === String(item.id));
+                if (p) p.stock = Math.max(0, (p.stock || 0) - item.qty);
+            });
+            saveAdminProducts(prods); // also pushes to Firebase if connected
+        }
 
         // ─── Generate unique Order ID ──────────────────────────────
         function generateOrderId() {
@@ -2595,10 +2646,12 @@
             if (!selectedSize) { alert('Please select a size first'); return; }
             _paymentContext = {
                 type:    'buy_now',
+                id:      selectedProduct.id,
                 product: selectedProduct.name,
                 brand:   selectedProduct.brand,
                 size:    selectedSize,
                 qty:     quantity,
+                price:   selectedProduct.price,
                 amount:  selectedProduct.price * quantity,
                 image:   selectedProduct.image
             };
@@ -2700,35 +2753,8 @@
                 },
                 theme: { color: '#000000' },
                 handler: function(response) {
-                    // ✅ Build full order payload
-                    const orderData = {
-                        order_id:    orderId,
-                        payment_id:  response.razorpay_payment_id,
-                        status:      'Paid – Pending Dispatch',
-                        timestamp:   new Date().toISOString(),
-                        name,
-                        phone,
-                        email,
-                        address:     fullAddr,
-                        product:     ctx.product,
-                        amount:      ctx.amount,
-                        type:        ctx.type,
-                        store:       'Vynox Menswear',
-                        ...(ctx.type === 'buy_now' && {
-                            brand:    ctx.brand,
-                            size:     ctx.size,
-                            quantity: ctx.qty
-                        }),
-                        ...(ctx.type === 'cart' && {
-                            items: JSON.stringify(ctx.items.map(i => ({
-                                name: i.name, brand: i.brand,
-                                size: i.size, qty: i.qty, price: i.price
-                            })))
-                        })
-                    };
-
-                    // Send to Google Sheet
-                    sendToSheet(orderData);
+                    // ✅ Save order so it reflects in Admin Panel (Dashboard/Billing/Reports/Orders) + Firebase
+                    saveOnlineOrder(orderId, response.razorpay_payment_id, name, phone, email, fullAddr, ctx);
 
                     // Show success
                     showOrderSuccess(orderId, response.razorpay_payment_id, name);
@@ -2759,7 +2785,8 @@
             const box = document.createElement('div');
             box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
             box.innerHTML = `
-                <div style="background:#fff;border-radius:20px;padding:40px 28px 32px;max-width:420px;width:100%;text-align:center;animation:slideUp 0.3s ease;box-shadow:0 24px 80px rgba(0,0,0,0.25);">
+                <div style="background:#fff;border-radius:20px;padding:40px 28px 32px;max-width:420px;width:100%;text-align:center;animation:slideUp 0.3s ease;box-shadow:0 24px 80px rgba(0,0,0,0.25);position:relative;">
+                    <button onclick="this.closest('[style*=fixed]').remove()" aria-label="Close" style="position:absolute;top:14px;right:14px;background:#f3f4f6;border:none;width:34px;height:34px;border-radius:50%;font-size:18px;cursor:pointer;line-height:1;color:#555;">✕</button>
                     <div style="font-size:58px;margin-bottom:14px;">🎉</div>
                     <h3 style="font-size:22px;font-weight:800;margin-bottom:8px;color:#111;">Order Confirmed!</h3>
                     <p style="color:#555;margin-bottom:24px;font-size:15px;">Thank you, <strong>${name}</strong>!<br>Your order has been placed successfully.</p>
@@ -2774,23 +2801,9 @@
                         </div>
                     </div>
                     <p style="font-size:12px;color:#999;margin-bottom:22px;line-height:1.6;">📦 We'll dispatch your order within <strong>1–2 business days</strong>.<br>You'll receive updates on your registered phone.</p>
-                    <button onclick="this.closest('[style]').remove()" style="background:#000;color:#fff;border:none;border-radius:12px;padding:14px 40px;font-size:15px;font-weight:700;cursor:pointer;width:100%;transition:background 0.2s;" onmouseover="this.style.background='#222'" onmouseout="this.style.background='#000'">Continue Shopping</button>
+                    <button onclick="this.closest('[style*=fixed]').remove()" style="background:#000;color:#fff;border:none;border-radius:12px;padding:14px 40px;font-size:15px;font-weight:700;cursor:pointer;width:100%;transition:background 0.2s;" onmouseover="this.style.background='#222'" onmouseout="this.style.background='#000'">Continue Shopping</button>
                 </div>`;
             document.body.appendChild(box);
-        }
-
-        // ─── Send full order data to Google Sheet ─────────────────
-        function sendToSheet(data) {
-            if (!WEBHOOK_URL || WEBHOOK_URL === 'YOUR_WEBHOOK_URL') {
-                console.log('📋 Order Data (webhook not configured):', data);
-                return;
-            }
-            fetch(WEBHOOK_URL, {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify(data)
-            }).then(() => console.log('✅ Order saved to sheet'))
-              .catch(err => console.warn('⚠️ Sheet webhook error:', err));
         }
 
         function toggleModalWishlist() {
@@ -3424,8 +3437,7 @@ var selectedPayMethod = 'cash';
 var currentFoundProduct = null;
 var html5QrCode = null;
 var cameraRunning = false;
-var db = null;
-var firebaseConfigured = false;
+var firebaseConfigured = !!db;
 
 function getStoredCreds() {
     var s = localStorage.getItem('vynox_creds');
@@ -3474,15 +3486,49 @@ function adminLogout() {
 }
 
 function initAdminPanel() {
+    document.getElementById('dashboardDate').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    checkOnlineStatus();
+    selectPayMethod('cash');
     refreshDashboard();
     renderAdminProducts();
     renderInventory();
     renderBillingProducts();
     renderReports();
     renderOrders();
-    document.getElementById('dashboardDate').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-    checkOnlineStatus();
-    selectPayMethod('cash');
+    syncFromFirestore(function(){
+        refreshDashboard();
+        renderAdminProducts();
+        renderInventory();
+        renderBillingProducts();
+        renderReports();
+        renderOrders();
+    });
+}
+
+// ─── Pull latest orders/products from Firestore and merge into localStorage ───
+function syncFromFirestore(callback) {
+    if (!db) { if (callback) callback(); return; }
+    Promise.all([
+        db.collection('vynox_orders').get(),
+        db.collection('vynox_products').get()
+    ]).then(function(results){
+        var ordersSnap = results[0], prodsSnap = results[1];
+
+        var orderMap = {};
+        getOrders().forEach(function(o){ orderMap[o.id] = o; });
+        ordersSnap.forEach(function(doc){ orderMap[doc.id] = doc.data(); });
+        var mergedOrders = Object.values(orderMap).sort(function(a,b){ return new Date(a.date) - new Date(b.date); });
+        localStorage.setItem('vynox_orders', JSON.stringify(mergedOrders));
+
+        if (!prodsSnap.empty) {
+            var prodMap = {};
+            getAdminProducts().forEach(function(p){ prodMap[p.id] = p; });
+            prodsSnap.forEach(function(doc){ prodMap[doc.id] = doc.data(); });
+            localStorage.setItem('vynox_admin_products', JSON.stringify(Object.values(prodMap)));
+        }
+
+        if (callback) callback();
+    }).catch(function(e){ console.warn('Firestore sync error:', e); if (callback) callback(); });
 }
 
 function showAdminSection(name) {
@@ -3493,10 +3539,13 @@ function showAdminSection(name) {
     if (sec) sec.classList.add('active');
     var nav = document.getElementById('nav-'+name);
     if (nav) nav.classList.add('active');
-    if (name==='reports') renderReports();
-    if (name==='inventory') renderInventory();
-    if (name==='orders') renderOrders();
+    if (name==='dashboard') syncFromFirestore(refreshDashboard);
+    if (name==='reports') syncFromFirestore(renderReports);
+    if (name==='inventory') syncFromFirestore(renderInventory);
+    if (name==='orders') syncFromFirestore(renderOrders);
+    if (name==='products') syncFromFirestore(renderAdminProducts);
     if (name==='billing') {
+        syncFromFirestore(renderBillingProducts);
         renderBillingProducts();
         setTimeout(function(){ var el=document.getElementById('barcodeInput'); if(el) el.focus(); }, 200);
     }
