@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <title>Buy Men's Formal Shirts, Kurtas &amp; Casual Wear Online India | Vynox Menswear</title>
     <meta name="description" content="Buy premium menswear online in India at Vynox. Formal shirts, ethnic kurtas, blazers, casual wear &amp; winter jackets. Free shipping on prepaid orders. 3-day easy returns. 1000+ happy customers.">
     <meta name="keywords" content="men's clothing India, formal shirts online, casual wear men, ethnic kurta, winter jacket, blazer, menswear India, Vynox">
@@ -253,7 +256,8 @@
         /* ✅ Account / track / newsletter modals */
         .account-modal, .track-modal, .newsletter-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99995; display: none; align-items: center; justify-content: center; padding: 16px; }
         .account-modal.open, .track-modal.open, .newsletter-modal.open { display: flex; }
-        .account-modal .modal-box, .track-modal .modal-box, .newsletter-modal .modal-box { background: #fff; border-radius: 16px; padding: 28px; max-width: 460px; width: 100%; max-height: 90vh; overflow-y: auto; }
+        /* ✅ FIX: position:relative so the absolute close button anchors correctly */
+        .account-modal .modal-box, .track-modal .modal-box, .newsletter-modal .modal-box { background: #fff; border-radius: 16px; padding: 28px; max-width: 460px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; }
         .account-modal h3, .track-modal h3, .newsletter-modal h3 { font-size: 22px; margin-bottom: 8px; }
         .account-modal input, .track-modal input, .newsletter-modal input { width: 100%; padding: 12px 14px; border: 1px solid #e5e5e5; border-radius: 8px; margin-bottom: 10px; font-size: 14px; }
         .account-modal button.primary, .track-modal button.primary, .newsletter-modal button.primary { width: 100%; padding: 12px; background: #111; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
@@ -307,12 +311,13 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
-            color: #333;
+            color: #1a1a1a;
             background: #fff;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
         }
 
         /* ✅ IMAGE QUALITY: Global image rendering improvements */
@@ -340,6 +345,21 @@
             padding: 8px 16px;
             font-size: 13px;
             letter-spacing: 0.3px;
+            overflow: hidden;
+            position: relative;
+        }
+        .top-banner-inner {
+            display: inline-block;
+            white-space: nowrap;
+        }
+        @media (max-width: 768px) {
+            .top-banner-inner {
+                animation: bannerScroll 18s linear infinite;
+            }
+        }
+        @keyframes bannerScroll {
+            0%   { transform: translateX(100vw); }
+            100% { transform: translateX(-100%); }
         }
 
         .nav-container {
@@ -489,7 +509,7 @@
             opacity: 0;
             transition: opacity 0.6s ease-in-out;
             display: flex;
-            align-items: center;
+            align-items: flex-end;
         }
 
         .hero-slide.active { opacity: 1; }
@@ -507,9 +527,10 @@
 
         .hero-content {
             position: absolute;
-            left: 80px;
+            left: clamp(16px, 5%, 80px);
+            bottom: 48px;
             color: #fff;
-            max-width: 520px;
+            max-width: min(520px, calc(100% - 32px));
             z-index: 2;
         }
 
@@ -1187,130 +1208,468 @@
 
         .hidden { display: none !important; }
 
-        /* ===================== MOBILE RESPONSIVE ===================== */
+        /* ===================== MOBILE RESPONSIVE — FULL REWRITE ===================== */
 
-        @media (max-width: 1024px) {
-            .category-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
+        /* ── Prevent ANY horizontal overflow globally ── */
+        html, body {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+
+        /* ── FILTER DRAWER (mobile slide-up) ── */
+        .filter-drawer-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 4000;
+        }
+        .filter-drawer-overlay.open { display: block; }
+        .filter-drawer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-radius: 20px 20px 0 0;
+            padding: 24px 20px 32px;
+            z-index: 4001;
+            transform: translateY(100%);
+            transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
+            max-height: 88vh;
+            overflow-y: auto;
+        }
+        .filter-drawer.open { transform: translateY(0); }
+        .filter-drawer-handle {
+            width: 44px; height: 5px;
+            background: #e0e0e0;
+            border-radius: 99px;
+            margin: 0 auto 20px;
+        }
+        .filter-drawer h3 {
+            font-size: 16px; font-weight: 700;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+        .filter-drawer-section { margin-bottom: 22px; }
+        .filter-drawer-section label {
+            display: block; font-size: 12px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            color: #666; margin-bottom: 10px;
+        }
+        .filter-drawer-chips {
+            display: flex; gap: 8px; flex-wrap: wrap;
+        }
+        .filter-chip {
+            padding: 8px 16px;
+            border: 1.5px solid #e0e0e0;
+            background: #fff;
+            border-radius: 99px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s;
+        }
+        .filter-chip.active { background: #111; color: #fff; border-color: #111; }
+        .filter-drawer-range { width: 100%; accent-color: #111; margin-top: 6px; }
+        .filter-drawer-price-val {
+            font-size: 15px; font-weight: 700; color: #111;
+            text-align: center; margin-top: 6px;
+        }
+        .filter-drawer-apply {
+            width: 100%;
+            padding: 15px;
+            background: #111;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 6px;
         }
 
+        /* ── MOBILE FILTER TOGGLE BUTTON ── */
+        .filter-toggle-bar {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 0 0 16px;
+        }
+        .filter-toggle-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: #fff;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .filter-toggle-btn:hover { border-color: #111; }
+        .active-filters-count {
+            background: #111; color: #fff;
+            border-radius: 99px;
+            font-size: 11px; font-weight: 700;
+            padding: 2px 7px;
+            display: none;
+        }
+        .active-filters-count.has-filters { display: inline; }
+        .sort-select-inline {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            background: #fff;
+            cursor: pointer;
+            max-width: 180px;
+        }
+
+        /* ── PRODUCT CARD: Add-to-Cart mobile button ── */
+        .card-quick-buy {
+            display: none; /* shown on mobile */
+            width: 100%;
+            padding: 10px;
+            background: #111;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        .card-quick-buy:hover { background: #333; }
+
+        /* ── TOP BANNER scroll on mobile ── */
+        .top-banner {
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        /* ═══════════════════════════════════════
+           BREAKPOINT: 1200px — Large desktop
+        ═══════════════════════════════════════ */
+        @media (max-width: 1200px) {
+            .category-grid { grid-template-columns: repeat(2, 1fr); }
+            .product-grid { grid-template-columns: repeat(3, 1fr); gap: 22px; }
+        }
+
+        /* ═══════════════════════════════════════
+           BREAKPOINT: 1024px — Tablet landscape
+        ═══════════════════════════════════════ */
+        @media (max-width: 1024px) {
+            .category-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+            .product-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; }
+            .section { padding: 0 20px; }
+            .product-detail-grid { gap: 32px; }
+        }
+
+        /* ═══════════════════════════════════════
+           BREAKPOINT: 768px — Tablet portrait / large mobile
+        ═══════════════════════════════════════ */
         @media (max-width: 768px) {
-            /* Nav */
+            /* ── GLOBAL ── */
+            body { font-size: 15px; }
+            img { max-width: 100%; }
+
+            /* ── TOP BANNER ── */
+            .top-banner {
+                font-size: 11px;
+                padding: 7px 0;
+            }
+
+            /* ── NAV ── */
             .nav-links { display: none; }
             .hamburger { display: flex; }
-            .nav-container { padding: 12px 16px; }
-            .logo { font-size: 22px; }
-
-            /* Hero */
-            .hero-slider { height: 460px; }
-
-            .hero-content {
-                left: 20px;
-                right: 20px;
-                max-width: 100%;
-            }
-
-            .hero-content h1 { font-size: 30px; }
-            .hero-content p { font-size: 15px; }
-            .hero-content .price { font-size: 28px; }
-
-            .btn-primary { padding: 12px 24px; font-size: 14px; }
-
-            .slider-arrow { width: 38px; height: 38px; font-size: 18px; }
-
-            /* Trust */
-            .trust-container {
-                grid-template-columns: 1fr;
+            .nav-container {
+                padding: 10px 14px;
                 gap: 8px;
             }
+            .logo { font-size: 22px; letter-spacing: -0.5px; }
+            /* Keep only cart + hamburger in header on mobile */
+            .nav-icons .icon-btn:not(.cart-icon-btn) { display: none; }
+            .nav-icons { gap: 4px; }
 
-            .trust-item { padding: 14px; border-bottom: 1px solid #1f1f1f; }
-            .trust-item:last-child { border-bottom: none; }
+            /* ── HERO positioning handled above in main responsive block ── */
 
-            /* Sections */
-            .section { margin: 48px auto; padding: 0 16px; }
-            .section-header h2 { font-size: 26px; }
-            .section-header p { font-size: 15px; }
+            /* ── TRUST BADGES ── */
+            .trust-badges { padding: 0; }
+            .trust-container {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0;
+            }
+            .trust-item {
+                padding: 16px 10px;
+                border-bottom: none;
+                border-right: 1px solid #1f1f1f;
+            }
+            .trust-item:last-child { border-right: none; }
+            .trust-item .icon { font-size: 22px; margin-bottom: 6px; }
+            .trust-item h3 { font-size: 12px; line-height: 1.3; margin-bottom: 2px; }
+            .trust-item p { font-size: 11px; opacity: 0.65; }
 
-            /* Categories */
+            /* ── SECTIONS ── */
+            .section {
+                margin: 36px auto;
+                padding: 0 14px;
+            }
+            .section-header { margin-bottom: 24px; }
+            .section-header h2 { font-size: 22px; }
+            .section-header p { font-size: 14px; }
+
+            /* ── CATEGORIES ── */
             .category-grid {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 14px;
-                margin-bottom: 48px;
+                gap: 10px;
+                margin-bottom: 36px;
+            }
+            .category-card {
+                height: 44vw;
+                min-height: 150px;
+                max-height: 220px;
+                border-radius: 12px;
+            }
+            .category-overlay {
+                padding: 16px 14px 14px;
+            }
+            .category-overlay h3 { font-size: 15px; margin-bottom: 2px; }
+            .category-overlay p { font-size: 11px; margin-bottom: 8px; display: block; }
+            .category-btn { font-size: 12px; }
+
+            /* ── FILTER CATEGORY TABS (scrollable on mobile) ── */
+            .filter-section {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scroll-snap-type: x mandatory;
+                gap: 8px;
+                padding-bottom: 8px;
+                justify-content: flex-start;
+                margin-bottom: 14px;
+                /* hide scrollbar */
+                scrollbar-width: none;
+            }
+            .filter-section::-webkit-scrollbar { display: none; }
+            .filter-btn {
+                flex-shrink: 0;
+                scroll-snap-align: start;
+                padding: 8px 16px;
+                font-size: 13px;
+                border-radius: 99px;
+                white-space: nowrap;
             }
 
-            .category-card { height: 220px; border-radius: 10px; }
-            .category-overlay h3 { font-size: 17px; }
-            .category-overlay p { display: none; }
+            /* ── FILTER BAR → hidden on mobile, replaced by drawer ── */
+            .filter-bar { display: none !important; }
+            .filter-toggle-bar { display: flex; }
 
-            /* Products */
+            /* ── PRODUCT GRID ── */
             .product-grid {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 14px;
+                gap: 10px;
             }
 
-            .product-info { padding: 12px 14px 16px; }
-            .product-name { font-size: 14px; }
+            /* ── PRODUCT CARD ── */
+            .product-card { border-radius: 10px; }
+            .product-image { padding-top: 120%; }
+            .product-info { padding: 10px 10px 12px; }
+            .product-brand { font-size: 10px; margin-bottom: 3px; }
+            .product-name { font-size: 13px; line-height: 1.35; margin-bottom: 4px; }
             .product-description { display: none; }
-            .current-price { font-size: 17px; }
+            .product-rating { gap: 3px; margin-bottom: 5px; }
+            .stars { font-size: 11px; }
+            .rating-count { font-size: 10px; }
+            .current-price { font-size: 15px; }
+            .original-price { font-size: 12px; }
+            .discount-text { font-size: 11px; }
+            .product-price { gap: 5px; margin-bottom: 2px; flex-wrap: wrap; }
+            .size-preview { margin-top: 6px; gap: 3px; }
+            .size-preview span { font-size: 9px; padding: 2px 5px; }
+            .card-quick-buy { display: block; }
+            .wishlist-heart { width: 30px; height: 30px; top: 8px; right: 8px; }
 
-            /* Filter */
-            .filter-section { gap: 8px; margin-bottom: 24px; }
-            .filter-btn { padding: 8px 16px; font-size: 13px; }
+            /* ── PAGINATION ── */
+            .pagination { gap: 4px; margin-top: 24px; }
+            .pagination button { min-width: 34px; height: 34px; font-size: 13px; }
 
-            /* Modal */
-            .modal.active { padding: 0; align-items: flex-end; }
-
+            /* ── PRODUCT MODAL ── */
+            .modal.active {
+                padding: 0;
+                align-items: flex-end;
+            }
             .modal-content {
-                border-radius: 18px 18px 0 0;
-                max-height: 92vh;
+                border-radius: 20px 20px 0 0;
+                max-height: 94vh;
                 overflow-y: auto;
             }
-
-            .modal-body { padding: 20px 16px; }
-
+            .modal-body { padding: 16px 14px 24px; }
             .product-detail-grid {
                 grid-template-columns: 1fr;
-                gap: 24px;
+                gap: 0;
+            }
+            .product-images { position: static; }
+            .main-image { border-radius: 0; margin-bottom: 10px; }
+            .thumbnail-grid { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+            .detail-brand { font-size: 11px; }
+            .detail-name { font-size: 20px; }
+            .detail-current-price { font-size: 26px; }
+            .detail-original-price { font-size: 18px; }
+            .material-care { grid-template-columns: 1fr; gap: 16px; }
+            .secondary-actions { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .size-btn { padding: 9px 14px; font-size: 13px; }
+            .action-buttons { gap: 8px; }
+            .breadcrumb { font-size: 12px; margin-bottom: 14px; }
+
+            /* ── MODAL CLOSE ── */
+            .modal-close { width: 36px; height: 36px; font-size: 18px; top: 12px; right: 12px; }
+
+            /* ── SEARCH OVERLAY ── */
+            .search-overlay { padding-top: 60px; }
+            .search-box { padding: 16px; border-radius: 14px 14px 0 0; width: 100%; max-width: 100%; }
+
+            /* ── NEWSLETTER STRIP ── */
+            .newsletter-strip { padding: 28px 14px; margin: 0; }
+            .newsletter-strip h3 { font-size: 18px; }
+            .newsletter-strip p { font-size: 13px; margin-bottom: 12px; }
+            .newsletter-strip form { gap: 8px; }
+            .newsletter-strip input { font-size: 14px; padding: 12px; min-width: 0; }
+            .newsletter-strip button { padding: 12px 16px; font-size: 14px; }
+
+            /* ── CART DRAWER ── */
+            .cart-drawer { width: 100vw; }
+
+            /* ── FOOTER ── */
+            .footer {
+                padding: 36px 14px 20px;
+                margin-top: 36px;
+            }
+            .footer-content {
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+                margin-bottom: 24px;
+            }
+            .footer-section h3 { font-size: 14px; margin-bottom: 12px; }
+            .footer-section a { font-size: 13px; }
+            .footer-bottom { font-size: 12px; padding-top: 16px; }
+
+            /* ── POLICY PAGES ── */
+            .policy-cards { grid-template-columns: 1fr; gap: 14px; }
+            .policy-page { padding: 40px 14px 60px; }
+            .policy-page h2 { font-size: 24px; }
+            .policy-page .policy-subtitle { font-size: 14px; }
+            .about-features { grid-template-columns: 1fr; gap: 10px; }
+            .policy-back-btn { font-size: 14px; padding: 10px 16px; }
+
+            /* ── COOKIE BANNER ── */
+            .cookie-banner { padding: 12px 14px; gap: 10px; }
+            .cookie-banner p { font-size: 13px; }
+            .cookie-banner button { padding: 8px 14px; font-size: 13px; }
+
+            /* ── ORDER FORM MODAL ── */
+            #orderFormOverlay { padding: 8px; }
+            #orderFormBox { padding: 24px 16px 20px; }
+            #orderFormBox h3 { font-size: 17px; }
+            .form-row label { font-size: 11px; }
+            #orderFormBox input, #orderFormBox textarea, #orderFormBox select { font-size: 15px; }
+            .form-submit-btn { font-size: 15px; padding: 14px; }
+
+            /* ── ACCOUNT / TRACK MODAL ── */
+            .account-modal, .track-modal, .newsletter-modal {
+                padding: 8px;
+                align-items: flex-end;
+            }
+            .account-modal .modal-box,
+            .track-modal .modal-box,
+            .newsletter-modal .modal-box {
+                border-radius: 20px 20px 0 0;
+                max-width: 100%;
+                padding: 24px 18px 32px;
             }
 
-            .product-images { position: static; }
-
-            .detail-name { font-size: 22px; }
-            .detail-current-price { font-size: 26px; }
-
-            .material-care { grid-template-columns: 1fr; gap: 20px; }
-
-            /* Footer */
-            .footer { padding: 40px 16px 20px; margin-top: 48px; }
-            .footer-content { grid-template-columns: 1fr 1fr; gap: 24px; }
+            /* ── ADMIN ── */
+            .admin-panel { flex-direction: column !important; }
+            .admin-sidebar { width: 100% !important; height: auto !important; position: relative !important; flex-direction: row !important; overflow-x: auto; }
+            .admin-content { padding: 14px !important; }
+            .admin-table { font-size: 11px; }
+            .admin-table th, .admin-table td { padding: 5px 7px !important; }
         }
 
-        
-            /* Policy & About pages */
-            .policy-cards { grid-template-columns: 1fr; }
-            .policy-page h2 { font-size: 26px; }
-            .about-features { grid-template-columns: 1fr; }
-
-        /* Cart drawer mobile */
-        @media (max-width: 768px) {
-            .cart-drawer { width: 100vw; }
-        }
-
+        /* ═══════════════════════════════════════
+           BREAKPOINT: 480px — Small phones (360–480px)
+        ═══════════════════════════════════════ */
         @media (max-width: 480px) {
-            .hero-slider { height: 380px; }
-            .hero-content h1 { font-size: 24px; }
-            .hero-content .price { font-size: 22px; }
+            /* ── HERO ── */
+            .hero-slider { height: 62vw; min-height: 240px; }
+            .hero-content h1,
+            .hero-content .hero-title { font-size: clamp(18px, 5vw, 26px); }
+            .hero-content p { font-size: 13px; }
+            .btn-primary { padding: 10px 18px; font-size: 13px; }
 
-            .category-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-            .category-card { height: 180px; }
+            /* ── NAV ── */
+            .nav-container { padding: 9px 12px; }
+            .logo { font-size: 20px; }
 
-            .product-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+            /* ── CATEGORIES ── */
+            .category-grid { gap: 8px; }
+            .category-card {
+                height: 46vw;
+                min-height: 140px;
+            }
+            .category-overlay h3 { font-size: 14px; }
+            .category-overlay p { display: none; }
+            .category-btn { font-size: 11px; }
 
-            .footer-content { grid-template-columns: 1fr; gap: 20px; }
+            /* ── PRODUCTS ── */
+            .product-grid { gap: 8px; }
+            .product-name { font-size: 12px; }
+            .current-price { font-size: 14px; }
+            .product-info { padding: 8px 8px 10px; }
+            .card-quick-buy { font-size: 12px; padding: 9px; margin-top: 7px; }
 
-            .size-btn { padding: 9px 16px; font-size: 13px; }
+            /* ── FOOTER ── */
+            .footer-content { grid-template-columns: 1fr; gap: 18px; }
+
+            /* ── FILTER TABS ── */
+            .filter-btn { padding: 7px 13px; font-size: 12px; }
+
+            /* ── SIZE BTN ── */
+            .size-btn { padding: 8px 12px; font-size: 12px; min-width: 44px; }
+
+            /* ── TRUST ── */
+            .trust-item h3 { font-size: 11px; }
+            .trust-item p { display: none; }
+
+            /* ── PAGINATION ── */
+            .pagination button { min-width: 32px; height: 32px; font-size: 12px; padding: 0 8px; }
+        }
+
+        /* ═══════════════════════════════════════
+           BREAKPOINT: 360px — Smallest phones
+        ═══════════════════════════════════════ */
+        @media (max-width: 360px) {
+            .section { padding: 0 10px; }
+            .product-name { font-size: 11px; }
+            .category-card { min-height: 130px; }
+            .nav-container { padding: 8px 10px; }
+            .logo { font-size: 18px; }
+            .card-quick-buy { font-size: 11px; padding: 8px 6px; }
+        }
+
+        /* ═══════════════════════════════════════
+           DESKTOP: 4-column grid for products
+        ═══════════════════════════════════════ */
+        @media (min-width: 1200px) {
+            .product-grid { grid-template-columns: repeat(4, 1fr); gap: 28px; }
+            .category-grid { grid-template-columns: repeat(4, 1fr); }
         }
 
         /* ✅ UX: Search overlay */
@@ -2056,7 +2415,7 @@
         <!-- Header -->
     <header class="header" role="banner">
         <div class="top-banner" role="marquee" aria-label="Promotion">
-            🚚 Free Shipping On All Prepaid Orders &nbsp;|&nbsp; ↩️ 3 Days Easy Replacement &nbsp;|&nbsp; 📞 +91 90925 43740
+            <span class="top-banner-inner">🚚 Free Shipping On All Prepaid Orders &nbsp;|&nbsp; ↩️ 3 Days Easy Replacement &nbsp;|&nbsp; 📞 +91 90925 43740 &nbsp;|&nbsp; 🎁 Use WELCOME10 for 10% off your first order</span>
         </div>
         <nav class="nav-container" role="navigation" aria-label="Main navigation">
             <a href="#" class="logo" onclick="showHome(); return false;" aria-label="Vynox - Home">Vynox</a>
@@ -2079,7 +2438,7 @@
                     <button class="icon-btn" aria-label="My Account" onclick="openAccountModal()">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </button>
-                    <button class="icon-btn" aria-label="Track Order" onclick="openTrackOrderModal()" title="Track Order">
+                    <button class="icon-btn" aria-label="Track Order" onclick="openTrackOrderModal()" title="Track Your Delivery">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
                     </button>
                     <button class="icon-btn" aria-label="My Wishlist" onclick="openWishlistDrawer()">
@@ -2105,6 +2464,25 @@
         <div class="mobile-nav-panel">
             <div class="mobile-nav-close">
                 <button onclick="closeMobileNavDirect()" aria-label="Close menu">×</button>
+            </div>
+            <!-- ✅ FIX: Quick icon row for profile, track & search in mobile nav -->
+            <div style="display:flex;gap:8px;margin-bottom:18px;padding-bottom:16px;border-bottom:2px solid #f0f0f0;">
+                <button onclick="closeMobileNavDirect(); document.getElementById('searchOverlay').style.display='flex';" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;background:#f3f4f6;border:none;border-radius:10px;padding:12px 8px;cursor:pointer;font-size:11px;font-weight:600;color:#333;" aria-label="Search">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    Search
+                </button>
+                <button onclick="closeMobileNavDirect(); openAccountModal();" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;background:#f3f4f6;border:none;border-radius:10px;padding:12px 8px;cursor:pointer;font-size:11px;font-weight:600;color:#333;" aria-label="My Account">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Profile
+                </button>
+                <button onclick="closeMobileNavDirect(); openTrackOrderModal();" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;background:#f3f4f6;border:none;border-radius:10px;padding:12px 8px;cursor:pointer;font-size:11px;font-weight:600;color:#333;" aria-label="Track Order">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    Delivery
+                </button>
+                <button onclick="closeMobileNavDirect(); openWishlistDrawer();" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;background:#f3f4f6;border:none;border-radius:10px;padding:12px 8px;cursor:pointer;font-size:11px;font-weight:600;color:#333;" aria-label="Wishlist">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    Wishlist
+                </button>
             </div>
             <a href="#" onclick="filterByCategory('all'); closeMobileNavDirect(); scrollToProducts(); return false;">All Products</a>
             <a href="#" onclick="filterByCategory('Formal'); closeMobileNavDirect(); scrollToProducts(); return false;">Formal Wear</a>
@@ -2255,7 +2633,23 @@
                 <button class="filter-btn" onclick="filterByCategory('Ethnic')" aria-pressed="false">Ethnic Wear</button>
             </div>
 
-            <!-- ✅ FILTER BAR: sort + price range + size filter -->
+            <!-- ✅ MOBILE: Filter & Sort toggle bar (shows on mobile, hidden on desktop) -->
+            <div class="filter-toggle-bar" id="filterToggleBar">
+                <button class="filter-toggle-btn" onclick="openFilterDrawer()" aria-label="Open filters">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+                    Filters
+                    <span class="active-filters-count" id="activeFiltersCount">0</span>
+                </button>
+                <select class="sort-select-inline" id="sortSelectMobile" onchange="document.getElementById('sortSelect').value=this.value; applyStorefrontFilters()" aria-label="Sort products">
+                    <option value="featured">Featured</option>
+                    <option value="price-asc">Price: Low → High</option>
+                    <option value="price-desc">Price: High → Low</option>
+                    <option value="discount">Best Discount</option>
+                    <option value="rating">Top Rated</option>
+                </select>
+            </div>
+
+            <!-- ✅ FILTER BAR: sort + price range + size filter (desktop) -->
             <div class="filter-bar" role="region" aria-label="Sort and filter products">
                 <label>Sort:
                     <select id="sortSelect" onchange="applyStorefrontFilters()">
@@ -2267,7 +2661,7 @@
                     </select>
                 </label>
                 <label>Max Price: <span class="price-display" id="priceDisplayLabel">₹10000</span>
-                    <input type="range" id="priceRangeInput" min="499" max="10000" step="100" value="10000" oninput="document.getElementById('priceDisplayLabel').textContent='₹'+this.value; applyStorefrontFilters()" aria-label="Maximum price">
+                    <input type="range" id="priceRangeInput" min="499" max="10000" step="100" value="10000" oninput="document.getElementById('priceDisplayLabel').textContent='₹'+this.value; document.getElementById('drawerPriceRange').value=this.value; document.getElementById('drawerPriceVal').textContent='Up to ₹'+this.value; applyStorefrontFilters()" aria-label="Maximum price">
                 </label>
                 <label>Size:
                     <select id="sizeFilterSelect" onchange="applyStorefrontFilters()">
@@ -2898,13 +3292,16 @@
                         '<button class="wishlist-heart' + heartActive + '" data-wish="' + p.id + '" onclick="toggleWishlist(event,\'' + p.id + '\')" aria-label="Add to wishlist">' +
                             '<svg width="16" height="16" viewBox="0 0 24 24" fill="' + heartFill + '" stroke="' + heartStroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
                         '</button>' +
+                        (discount ? '<span style="position:absolute;top:8px;left:8px;background:#16a34a;color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:4px;">' + p.discount + '% OFF</span>' : '') +
                     '</div>' +
                     '<div class="product-info">' +
                         '<div class="product-brand">' + p.brand + '</div>' +
                         '<div class="product-name">' + p.name + '</div>' +
                         '<div class="product-rating"><span class="stars">' + stars + '</span><span class="rating-count">(' + ratingCount + ')</span></div>' +
-                        '<div class="product-price"><span class="current-price">&#8377;' + p.price.toLocaleString('en-IN') + '</span>' + origPrice + discount + '</div>' +
-                        '<div class="size-preview"><span>S</span><span>M</span><span>L</span><span>XL</span><span>XXL</span></div>' +
+                        '<div class="product-price"><span class="current-price">&#8377;' + p.price.toLocaleString('en-IN') + '</span>' + origPrice + '</div>' +
+                        (p.discount > 0 ? '<div style="margin-top:2px;"><span class="discount-text">Save &#8377;' + (p.originalPrice - p.price).toLocaleString('en-IN') + '</span></div>' : '') +
+                        '<div class="size-preview"><span>S</span><span>M</span><span>L</span><span>XL</span></div>' +
+                        '<button class="card-quick-buy" onclick="event.stopPropagation();openProduct(\'' + p.id + '\')" aria-label="Quick buy ' + p.name + '">&#43; Quick Buy</button>' +
                     '</div>' +
                 '</article>';
             }).join('');
@@ -5114,6 +5511,52 @@
 
     <div id="adminToast" class="admin-toast"></div>
 
+    <!-- ✅ MOBILE FILTER DRAWER -->
+    <div class="filter-drawer-overlay" id="filterDrawerOverlay" onclick="closeFilterDrawer()"></div>
+    <div class="filter-drawer" id="filterDrawer" role="dialog" aria-label="Filter products">
+        <div class="filter-drawer-handle"></div>
+        <h3>Filter &amp; Sort</h3>
+
+        <div class="filter-drawer-section">
+            <label>Sort By</label>
+            <div class="filter-drawer-chips">
+                <button class="filter-chip active" data-sort="featured" onclick="setDrawerSort(this,'featured')">Featured</button>
+                <button class="filter-chip" data-sort="price-asc" onclick="setDrawerSort(this,'price-asc')">Price: Low→High</button>
+                <button class="filter-chip" data-sort="price-desc" onclick="setDrawerSort(this,'price-desc')">Price: High→Low</button>
+                <button class="filter-chip" data-sort="discount" onclick="setDrawerSort(this,'discount')">Best Discount</button>
+                <button class="filter-chip" data-sort="rating" onclick="setDrawerSort(this,'rating')">Top Rated</button>
+            </div>
+        </div>
+
+        <div class="filter-drawer-section">
+            <label>Max Price: <span id="drawerPriceVal" style="font-weight:700;color:#111;">Up to ₹10000</span></label>
+            <input type="range" class="filter-drawer-range" id="drawerPriceRange" min="499" max="10000" step="100" value="10000"
+                oninput="document.getElementById('drawerPriceVal').textContent='Up to ₹'+this.value">
+        </div>
+
+        <div class="filter-drawer-section">
+            <label>Size</label>
+            <div class="filter-drawer-chips">
+                <button class="filter-chip active" data-size="" onclick="setDrawerSize(this,'')">All</button>
+                <button class="filter-chip" data-size="S" onclick="setDrawerSize(this,'S')">S</button>
+                <button class="filter-chip" data-size="M" onclick="setDrawerSize(this,'M')">M</button>
+                <button class="filter-chip" data-size="L" onclick="setDrawerSize(this,'L')">L</button>
+                <button class="filter-chip" data-size="XL" onclick="setDrawerSize(this,'XL')">XL</button>
+                <button class="filter-chip" data-size="XXL" onclick="setDrawerSize(this,'XXL')">XXL</button>
+            </div>
+        </div>
+
+        <div class="filter-drawer-section">
+            <label>Availability</label>
+            <div class="filter-drawer-chips">
+                <button class="filter-chip active" data-stock="" onclick="setDrawerStock(this,'')">All</button>
+                <button class="filter-chip" data-stock="in" onclick="setDrawerStock(this,'in')">In Stock Only</button>
+            </div>
+        </div>
+
+        <button class="filter-drawer-apply" onclick="applyDrawerFilters()">Apply Filters</button>
+    </div>
+
     <!-- ✅ COOKIE CONSENT BANNER -->
     <div class="cookie-banner" id="cookieBanner" role="dialog" aria-label="Cookie consent">
         <p>🍪 We use cookies to power your shopping cart, remember your preferences, and (with your permission) measure site usage with GA4 and Meta Pixel. See our <a href="#" onclick="navigateTo('privacy'); return false;" style="color:#fbbf24;text-decoration:underline;">Privacy Policy</a>.</p>
@@ -6355,6 +6798,78 @@ function toggleCoupon(id) {
 }
 
 function imgErr(el){ el.style.display='none'; }
+
+// ===================== MOBILE FILTER DRAWER =====================
+function openFilterDrawer() {
+    document.getElementById('filterDrawer').classList.add('open');
+    document.getElementById('filterDrawerOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    // Sync current filter values to drawer
+    var currentSort = document.getElementById('sortSelect').value;
+    document.querySelectorAll('#filterDrawer [data-sort]').forEach(function(btn) {
+        btn.classList.toggle('active', btn.dataset.sort === currentSort);
+    });
+    var currentSize = document.getElementById('sizeFilterSelect').value;
+    document.querySelectorAll('#filterDrawer [data-size]').forEach(function(btn) {
+        btn.classList.toggle('active', btn.dataset.size === currentSize);
+    });
+    var currentStock = document.getElementById('stockFilterSelect').value;
+    document.querySelectorAll('#filterDrawer [data-stock]').forEach(function(btn) {
+        btn.classList.toggle('active', btn.dataset.stock === currentStock);
+    });
+    var currentPrice = document.getElementById('priceRangeInput').value;
+    document.getElementById('drawerPriceRange').value = currentPrice;
+    document.getElementById('drawerPriceVal').textContent = 'Up to ₹' + parseInt(currentPrice).toLocaleString('en-IN');
+}
+
+function closeFilterDrawer() {
+    document.getElementById('filterDrawer').classList.remove('open');
+    document.getElementById('filterDrawerOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function setDrawerSort(btn, val) {
+    document.querySelectorAll('#filterDrawer [data-sort]').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+}
+function setDrawerSize(btn, val) {
+    document.querySelectorAll('#filterDrawer [data-size]').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+}
+function setDrawerStock(btn, val) {
+    document.querySelectorAll('#filterDrawer [data-stock]').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+}
+
+function applyDrawerFilters() {
+    // Read active chips
+    var sortBtn = document.querySelector('#filterDrawer [data-sort].active');
+    if (sortBtn) {
+        document.getElementById('sortSelect').value = sortBtn.dataset.sort;
+        var mob = document.getElementById('sortSelectMobile');
+        if (mob) mob.value = sortBtn.dataset.sort;
+    }
+    var sizeBtn = document.querySelector('#filterDrawer [data-size].active');
+    if (sizeBtn) document.getElementById('sizeFilterSelect').value = sizeBtn.dataset.size;
+    var stockBtn = document.querySelector('#filterDrawer [data-stock].active');
+    if (stockBtn) document.getElementById('stockFilterSelect').value = stockBtn.dataset.stock;
+    var priceVal = document.getElementById('drawerPriceRange').value;
+    document.getElementById('priceRangeInput').value = priceVal;
+    document.getElementById('priceDisplayLabel').textContent = '₹' + parseInt(priceVal).toLocaleString('en-IN');
+    // Count active filters for badge
+    var count = 0;
+    if (sortBtn && sortBtn.dataset.sort !== 'featured') count++;
+    if (sizeBtn && sizeBtn.dataset.size !== '') count++;
+    if (stockBtn && stockBtn.dataset.stock !== '') count++;
+    if (parseInt(priceVal) < 10000) count++;
+    var badge = document.getElementById('activeFiltersCount');
+    if (badge) {
+        badge.textContent = count;
+        badge.classList.toggle('has-filters', count > 0);
+    }
+    applyStorefrontFilters();
+    closeFilterDrawer();
+}
 </script>
 
 </body>
