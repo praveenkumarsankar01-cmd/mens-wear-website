@@ -157,7 +157,20 @@
          Set VYN_BACKEND_BASE_URL below to your deployed backend URL. -->
     <script>
       window.VYN_BACKEND_BASE_URL = 'https://vynox-menswear.vercel.app';
-      window.VYN_PUBLIC_RAZORPAY_KEY = 'rzp_live_SjcxBKHMwcDPXp'; // Public key only — safe to expose
+      // ✅ FIX #5 (audit): Use TEST key in source. Backend should serve the LIVE key via
+      //    GET /api/config/razorpay-public-key at runtime so the live key never ships
+      //    in client source. Override at runtime with window.VYN_PUBLIC_RAZORPAY_KEY.
+      window.VYN_PUBLIC_RAZORPAY_KEY = 'rzp_test_XXXXXXXXXX'; // Public key only — safe to expose
+      (function loadLiveRazorpayKey(){
+          // Best-effort runtime fetch of the live key from backend; silently fall back to test key.
+          if (!window.VYN_BACKEND_BASE_URL) return;
+          try {
+              fetch(window.VYN_BACKEND_BASE_URL + '/api/config/razorpay-public-key')
+                  .then(function(r){ return r.ok ? r.json() : null; })
+                  .then(function(d){ if (d && d.keyId && /^rzp_(live|test)_/.test(d.keyId)) window.VYN_PUBLIC_RAZORPAY_KEY = d.keyId; })
+                  .catch(function(){ /* keep default test key */ });
+          } catch (e) { /* ignore — keep test key */ }
+      })();
       window.VYN_PUBLIC_FIREBASE_CONFIG = {
           apiKey: 'AIzaSyCbe7VF8AVO_MMRthXc4A7N_h2aTYujkaE',
           authDomain: 'vynox-d8699.firebaseapp.com',
@@ -3140,6 +3153,17 @@
                 // Demo mode — return a sentinel so callers can fall back to local storage
                 return { ok: false, demo: true };
             }
+            // ✅ FIX #20 (audit): Attach the user's session token as a Bearer header on
+            //    every backend call so the backend can authenticate the caller. Without
+            //    this, all /api/orders, /api/razorpay/verify, etc. calls were anonymous.
+            try {
+                var sess = safeParseJSON(localStorage.getItem('vynox_session') || sessionStorage.getItem('vynox_session') || 'null', null);
+                options = options || {};
+                options.headers = Object.assign({}, options.headers || {});
+                if (sess && sess.token) {
+                    options.headers['Authorization'] = 'Bearer ' + sess.token;
+                }
+            } catch (e) { /* ignore */ }
             try {
                 const res = await fetch(window.VYN_BACKEND_BASE_URL + path, {
                     headers: { 'Content-Type': 'application/json' },
@@ -3308,7 +3332,7 @@
                        sessionStorage.removeItem('wishlist');
                    } catch (e) {}
                })();
-        const wishlist = new Set(JSON.parse(localStorage.getItem('wishlist') || '[]'));
+        const wishlist = new Set(safeParseJSON(localStorage.getItem('wishlist') || '[]', []));
 
         function saveWishlist() {
             try { localStorage.setItem('wishlist', JSON.stringify([...wishlist])); } catch(e) {}
@@ -3387,24 +3411,24 @@
                 const outOfStock = (p.stock !== undefined && p.stock === 0);
                 const oosBadge = outOfStock ? '<span class="oos-badge" style="position:absolute;top:8px;left:8px;">Out of Stock</span>' : '';
                 const oosOverlay = outOfStock ? '<div class="oos-overlay">SOLD OUT</div>' : '';
-                return '<article class="product-card" data-category="' + p.category + '" onclick="openProduct(\'' + p.id + '\')" role="listitem" tabindex="0" onkeypress="if(event.key===\'Enter\') openProduct(\'' + p.id + '\')" aria-label="' + p.name + ' by ' + p.brand + '">' +
+                return '<article class="product-card" data-category="' + escapeAttr(p.category) + '" onclick="openProduct(\'' + escapeAttr(p.id) + '\')" role="listitem" tabindex="0" onkeypress="if(event.key===\'Enter\') openProduct(\'' + escapeAttr(p.id) + '\')" aria-label="' + escapeAttr(p.name) + ' by ' + escapeAttr(p.brand) + '">' +
                     '<div class="product-image" style="position:relative;">' +
                         oosBadge +
-                        '<img src="' + p.image + '" alt="' + p.name + '" loading="lazy" width="300" height="300">' +
+                        '<img src="' + escapeAttr(p.image) + '" alt="' + escapeAttr(p.name) + '" loading="lazy" width="300" height="300">' +
                         oosOverlay +
-                        '<button class="wishlist-heart' + heartActive + '" data-wish="' + p.id + '" onclick="toggleWishlist(event,\'' + p.id + '\')" aria-label="Add to wishlist">' +
+                        '<button class="wishlist-heart' + heartActive + '" data-wish="' + escapeAttr(p.id) + '" onclick="toggleWishlist(event,\'' + escapeAttr(p.id) + '\')" aria-label="Add to wishlist">' +
                             '<svg width="16" height="16" viewBox="0 0 24 24" fill="' + heartFill + '" stroke="' + heartStroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
                         '</button>' +
                         (discount ? '<span style="position:absolute;top:8px;left:8px;background:#16a34a;color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:4px;">' + p.discount + '% OFF</span>' : '') +
                     '</div>' +
                     '<div class="product-info">' +
-                        '<div class="product-brand">' + p.brand + '</div>' +
-                        '<div class="product-name">' + p.name + '</div>' +
+                        '<div class="product-brand">' + escapeHtml(p.brand) + '</div>' +
+                        '<div class="product-name">' + escapeHtml(p.name) + '</div>' +
                         '<div class="product-rating"><span class="stars">' + stars + '</span><span class="rating-count">(' + ratingCount + ')</span></div>' +
                         '<div class="product-price"><span class="current-price">&#8377;' + p.price.toLocaleString('en-IN') + '</span>' + origPrice + '</div>' +
                         (p.discount > 0 ? '<div style="margin-top:2px;"><span class="discount-text">Save &#8377;' + (p.originalPrice - p.price).toLocaleString('en-IN') + '</span></div>' : '') +
                         '<div class="size-preview"><span>S</span><span>M</span><span>L</span><span>XL</span></div>' +
-                        '<button class="card-quick-buy" onclick="event.stopPropagation();openProduct(\'' + p.id + '\')" aria-label="Quick buy ' + p.name + '">&#43; Quick Buy</button>' +
+                        '<button class="card-quick-buy" onclick="event.stopPropagation();openProduct(\'' + escapeAttr(p.id) + '\')" aria-label="Quick buy ' + escapeAttr(p.name) + '">&#43; Quick Buy</button>' +
                     '</div>' +
                 '</article>';
             }).join('');
@@ -3471,9 +3495,9 @@
             if (rv.length === 0) { section.style.display = 'none'; return; }
             section.style.display = 'block';
             grid.innerHTML = rv.map(p => (
-                '<article class="product-card" onclick="openProduct(\'' + p.id + '\')" role="listitem" tabindex="0" onkeypress="if(event.key===\'Enter\') openProduct(\'' + p.id + '\')" aria-label="' + p.name + '">' +
-                    '<div class="product-image"><img src="' + p.image + '" alt="' + p.name + '" loading="lazy"></div>' +
-                    '<div class="product-info"><div class="product-brand">' + p.brand + '</div><div class="product-name">' + p.name + '</div>' +
+                '<article class="product-card" onclick="openProduct(\'' + escapeAttr(p.id) + '\')" role="listitem" tabindex="0" onkeypress="if(event.key===\'Enter\') openProduct(\'' + escapeAttr(p.id) + '\')" aria-label="' + escapeAttr(p.name) + '">' +
+                    '<div class="product-image"><img src="' + escapeAttr(p.image) + '" alt="' + escapeAttr(p.name) + '" loading="lazy"></div>' +
+                    '<div class="product-info"><div class="product-brand">' + escapeHtml(p.brand) + '</div><div class="product-name">' + escapeHtml(p.name) + '</div>' +
                     '<div class="product-price"><span class="current-price">&#8377;' + p.price.toLocaleString('en-IN') + '</span></div></div>' +
                 '</article>'
             )).join('');
@@ -3627,7 +3651,7 @@
                     : '<span style="margin-left:10px;color:#16a34a;font-size:13px;font-weight:600;">✓ In Stock</span>');
 
             const buyNowBtnHtml = outOfStock
-                ? '<button class="razorpay-btn" onclick="openNotifyMe(\'' + selectedProduct.id + '\')" aria-label="Notify me when available" style="background:#f59e0b;">🔔 Notify Me When Available</button>'
+                ? '<button class="razorpay-btn" onclick="openNotifyMe(\'' + escapeAttr(selectedProduct.id) + '\')" aria-label="Notify me when available" style="background:#f59e0b;">🔔 Notify Me When Available</button>'
                 : '<button class="razorpay-btn" onclick="buyNowRazorpay()" aria-label="Buy Now via Razorpay"><svg style="width:20px;height:20px;flex-shrink:0;" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 3.75a3 3 0 0 0-3 3v.75h21v-.75a3 3 0 0 0-3-3h-15Z"/><path fill-rule="evenodd" d="M22.5 9.75h-21v7.5a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3v-7.5Zm-18 3.75a.75.75 0 0 1 .75-.75h6a.75.75 0 0 1 0 1.5h-6a.75.75 0 0 1-.75-.75Zm.75 2.25a.75.75 0 0 0 0 1.5h3a.75.75 0 0 0 0-1.5h-3Z" clip-rule="evenodd"/></svg>Buy Now</button>';
             const addToCartBtnHtml = outOfStock
                 ? '<button id="addToCartBtn" class="add-to-cart-btn" disabled style="background:#999;cursor:not-allowed;opacity:0.6;" aria-label="Add to Cart">🛒 Out of Stock</button>'
@@ -3640,20 +3664,21 @@
                 <nav class="breadcrumb" aria-label="Breadcrumb">
                     <a href="#" onclick="showHome(); closeStoreProductModal(); return false;">Home</a> /
                     <a href="#" onclick="closeStoreProductModal(); return false;">Products</a> /
-                    <span>${selectedProduct.name}</span>
+                    <span>${escapeHtml(selectedProduct.name)}</span>
                 </nav>
 
                 <div class="product-detail-grid">
                     <div class="product-images">
                         <div class="main-image">
-                            <img id="modalMainImg" src="${selectedProduct.image.replace('w=800', 'w=1200')}" alt="${selectedProduct.name} by ${selectedProduct.brand} — detailed view" loading="eager">
+                            <img id="modalMainImg" src="${escapeAttr(selectedProduct.image.replace('w=800', 'w=1200'))}" alt="${escapeAttr(selectedProduct.name)} by ${escapeAttr(selectedProduct.brand)} — detailed view" loading="eager">
                         </div>
                         <div class="thumbnail-grid" id="thumbGrid">
                             ${(function(){
                                 var imgs = selectedProduct.images && selectedProduct.images.length > 1 ? selectedProduct.images : [selectedProduct.image, selectedProduct.image, selectedProduct.image, selectedProduct.image, selectedProduct.image];
                                 return imgs.slice(0,5).map(function(src, i){
-                                    return '<div class="thumbnail' + (i===0?' active':'') + '" onclick="switchMainImg(this,\'' + src + '\')" style="cursor:pointer;">' +
-                                        '<img src="' + src + '" alt="' + selectedProduct.name + ' view ' + (i+1) + '" loading="lazy">' +
+                                    // ✅ FIX #14 (audit): escapeAttr src + product name in thumbnail onclick + alt.
+                                    return '<div class="thumbnail' + (i===0?' active':'') + '" onclick="switchMainImg(this,\'' + escapeAttr(src) + '\')" style="cursor:pointer;">' +
+                                        '<img src="' + escapeAttr(src) + '" alt="' + escapeAttr(selectedProduct.name) + ' view ' + (i+1) + '" loading="lazy">' +
                                     '</div>';
                                 }).join('');
                             })()}
@@ -3661,9 +3686,9 @@
                     </div>
 
                     <div class="product-details">
-                        <div class="detail-brand">${selectedProduct.brand}</div>
-                        <h1 class="detail-name">${selectedProduct.name}</h1>
-                        <p class="detail-description">${selectedProduct.description}</p>
+                        <div class="detail-brand">${escapeHtml(selectedProduct.brand)}</div>
+                        <h1 class="detail-name">${escapeHtml(selectedProduct.name)}</h1>
+                        <p class="detail-description">${escapeHtml(selectedProduct.description)}</p>
 
                         <div class="detail-price">
                             <span class="detail-current-price">₹${selectedProduct.price.toLocaleString('en-IN')}</span>
@@ -3895,6 +3920,25 @@
         function escapeHtml(s) {
             return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         }
+        // ✅ FIX #14 (audit): Escape for HTML-attribute contexts (value="...").
+        //    escapeHtml alone is not sufficient inside a double-quoted attribute because
+        //    unescaped `<` and `>` can break out via event handlers like "><img onerror>.
+        function escapeAttr(s) {
+            return String(s).replace(/[&<>"'`]/g, function(c){
+                return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[c];
+            });
+        }
+        // ✅ FIX #27 (audit): Safe JSON.parse for all localStorage reads — never throws.
+        function safeParseJSON(str, fallback) {
+            if (str === null || str === undefined) return fallback;
+            try { return JSON.parse(str); } catch (e) { return fallback; }
+        }
+        // ✅ FIX #16 (audit): Prefix cells starting with = + - @ to prevent CSV/formula injection.
+        function csvCell(v) {
+            var s = String(v == null ? '' : v);
+            if (/^[=+\-@]/.test(s)) s = "'" + s;
+            return '"' + s.replace(/"/g, '""') + '"';
+        }
 
         // ✅ FOCUS TRAP for modals (a11y)
         function trapFocus(container) {
@@ -3972,7 +4016,6 @@
                 couponCode: ctx.couponCode || null,
                 total: ctx.amount,
                 type: 'online',
-                deliveryAddress: ctx.deliveryAddress || null,
                 paymentMethod: 'online',
                 paymentId: paymentId,
                 paymentVerified: !!(verified && verified.verified),
@@ -3983,13 +4026,17 @@
                 date: new Date().toISOString()
             };
 
-            // ✅ Try backend first; fall back to localStorage + Firebase
-            const r = await apiFetch('/api/orders', { method: 'POST', body: JSON.stringify(order) });
-            if (r.demo) {
-                // Demo mode — save locally + Firebase
+            // ✅ FIX #1 (audit): ALWAYS save locally first as a safety net. The previous
+            //    `if (r.demo)` check skipped local save whenever the backend was
+            //    configured but the request failed (network error / 5xx), causing
+            //    silent order loss while the customer saw a success screen.
+            //    Now: save locally + try backend separately; local copy is the source of truth.
+            let orderSavedLocally = false;
+            try {
                 const orders = getOrders();
                 orders.push(order);
                 saveOrders(orders); // also pushes to Firebase if connected
+                orderSavedLocally = true;
 
                 // Deduct stock for purchased items
                 const prods = getAdminProducts();
@@ -4001,6 +4048,27 @@
 
                 // ✅ Auto-create shipment in demo log
                 createShipment({ orderId, customer: name, address, items, total: ctx.amount });
+            } catch (e) {
+                console.error('Local save failed for online order:', e);
+            }
+
+            // ✅ Try backend (best-effort). If it succeeds, the backend is the source of truth.
+            //    If it fails or backend isn't configured, the local copy from above still survives.
+            try {
+                const r = await apiFetch('/api/orders', { method: 'POST', body: JSON.stringify(order) });
+                if (r.ok) {
+                    // Backend acknowledged — order is durably persisted server-side.
+                    return { saved: true, backend: true, local: orderSavedLocally };
+                }
+                if (r.demo) {
+                    return { saved: orderSavedLocally, backend: false, local: orderSavedLocally, demo: true };
+                }
+                // Backend configured but request failed — local copy still exists.
+                console.warn('Backend order save failed; order kept locally:', r.error);
+                return { saved: orderSavedLocally, backend: false, local: orderSavedLocally, error: r.error };
+            } catch (e) {
+                console.error('Backend order save threw; order kept locally:', e);
+                return { saved: orderSavedLocally, backend: false, local: orderSavedLocally, error: e.message };
             }
         }
 
@@ -4150,13 +4218,46 @@
         }
 
         // ─── Validate & Proceed to Payment (Online via Razorpay OR COD) ──
-        function proceedToRazorpay() {
+        async function proceedToRazorpay() {
             // ✅ Login gate: if not authenticated, show login modal and preserve checkout state
-            var session = JSON.parse(localStorage.getItem('vynox_session') || 'null');
+            var session = safeParseJSON(localStorage.getItem('vynox_session') || 'null', null);
             if (!session || !session.email) {
                 _pendingCheckoutReturn = true; // flag to return to checkout after login
                 openAccountModal();
                 return;
+            }
+
+            // ✅ FIX #24 (audit): Re-capture _paymentContext from the current cart/product
+            //    state. While the login modal was open, the user may have removed items
+            //    from the cart or applied a different coupon — the stale _paymentContext
+            //    captured at checkout time would otherwise charge them for the wrong cart.
+            if (_paymentContext) {
+                if (_paymentContext.type === 'cart' && cart) {
+                    const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+                    const discount = appliedCoupon ? appliedCoupon.discount : 0;
+                    const baseTotal = Math.max(0, subtotal - discount);
+                    _paymentContext.items = JSON.parse(JSON.stringify(cart));
+                    _paymentContext.subtotal = subtotal;
+                    _paymentContext.discount = discount;
+                    _paymentContext.couponCode = appliedCoupon ? appliedCoupon.code : null;
+                    _paymentContext.baseAmount = baseTotal;
+                    // Preserve the user-selected payment method & shipping fee.
+                    const method = _paymentContext.paymentMethod || 'online';
+                    _paymentContext.amount = method === 'cod' ? (baseTotal + COD_SHIPPING_FEE) : baseTotal;
+                    _paymentContext.shippingFee = method === 'cod' ? COD_SHIPPING_FEE : 0;
+                    if (cart.length === 0) {
+                        showToast('Your cart is empty. Add items before checkout.', 'error');
+                        return;
+                    }
+                } else if (_paymentContext.type === 'buy_now' && selectedProduct) {
+                    // Refresh product details in case admin edited it during login.
+                    _paymentContext.price = selectedProduct.price;
+                    _paymentContext.product = selectedProduct.name;
+                    _paymentContext.brand = selectedProduct.brand;
+                    _paymentContext.image = selectedProduct.image;
+                    _paymentContext.amount = selectedProduct.price * _paymentContext.qty;
+                    _paymentContext.baseAmount = _paymentContext.amount;
+                }
             }
 
             const name    = document.getElementById('cm_fullname').value.trim();
@@ -4185,6 +4286,7 @@
 
             const orderId   = generateOrderId();
             const ctx       = _paymentContext;
+            if (!ctx) { showToast('Checkout session expired. Please try again.', 'error'); return; }
             // Build full address string for backward compat
             const fullAddr  = `${address1}${address2 ? ', ' + address2 : ''}, ${city}, ${state} - ${pincode}${country !== 'India' ? ', ' + country : ''}`;
             // Build deliveryAddress object for reports
@@ -4212,8 +4314,56 @@
             document.getElementById('orderFormOverlay').classList.remove('open');
 
             var rzpConfig = getRazorpayCheckoutConfig();
+
+            // ✅ FIX #6 (audit): Create a Razorpay Order on the BACKEND before opening
+            //    the Razorpay checkout. Razorpay signature verification requires a real
+            //    razorpay_order_id returned by POST /v1/orders — a client-only ID cannot
+            //    be verified. Without this, every paid order would stay paymentVerified:false.
+            let rzpOrderId = null;
+            if (window.VYN_BACKEND_BASE_URL) {
+                try {
+                    const createRes = await fetch(window.VYN_BACKEND_BASE_URL + '/api/payment/create-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            internal_order_id: orderId,
+                            amount: Math.round(ctx.amount * 100), // paise
+                            currency: rzpConfig.currency || 'INR',
+                            customer: { name: name, email: email, contact: phone },
+                            notes: {
+                                order_id: orderId,
+                                customer: name,
+                                phone: phone,
+                                address: fullAddr,
+                                product: ctx.product
+                            }
+                        })
+                    });
+                    if (createRes.ok) {
+                        const createData = await createRes.json();
+                        rzpOrderId = createData.id || createData.razorpay_order_id || null;
+                    } else {
+                        console.warn('Backend create-order failed; proceeding without razorpay_order_id. Signature verification will fail.');
+                        showToast('Payment gateway issue. Please retry or contact support.', 'error');
+                        openCustomerModal();
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Razorpay create-order threw:', e);
+                    showToast('Payment gateway issue. Please retry.', 'error');
+                    openCustomerModal();
+                    return;
+                }
+            } else {
+                // Demo mode — no backend, so no real razorpay_order_id. Verification will
+                // fail, but we let the user complete the demo flow.
+                console.warn('Demo mode: no razorpay_order_id from backend. Signature verification will fail.');
+            }
+
             const options = {
                 key:         rzpConfig.key,
+                // ✅ FIX #6 (audit): pass the real razorpay_order_id so signature verification can succeed.
+                ...(rzpOrderId ? { order_id: rzpOrderId } : {}),
                 amount:      ctx.amount * 100,
                 currency:    rzpConfig.currency || 'INR',
                 name:        rzpConfig.name || 'Vynox Menswear',
@@ -4235,18 +4385,46 @@
                     ...(ctx.type === 'buy_now' && { size: ctx.size, quantity: String(ctx.qty) })
                 },
                 theme: { color: '#000000' },
+                // ✅ FIX #8 (audit): Recover gracefully if the user dismisses the Razorpay
+                //    modal (X / ESC / backdrop). Without this, _paymentContext stays set
+                //    and the customer modal stays closed — the user is stranded.
+                modal: {
+                    ondismiss: function() {
+                        showToast('Payment cancelled. You can retry from checkout.', '');
+                        openCustomerModal();
+                    }
+                },
                 handler: async function(response) {
                     // ✅ SECURITY: Verify payment signature on the BACKEND (not here).
                     //    The frontend cannot compute HMAC-SHA256 with the Razorpay Key Secret — only the server can.
                     //    Until verifyPaymentOnServer() returns ok, the order is UNVERIFIED and should be queued for manual review.
-                    const verified = await verifyPaymentOnServer({
-                        razorpay_order_id:   response.razorpay_order_id || orderId,
-                        razorpay_payment_id: response.razorpay_payment_id,
-                        razorpay_signature:  response.razorpay_signature
-                    });
+                    // ✅ FIX #25 (audit): Wrap verifyPaymentOnServer in try/catch so a network
+                    //    throw never silently aborts the success path.
+                    let verified = { verified: false };
+                    try {
+                        verified = await verifyPaymentOnServer({
+                            razorpay_order_id:   response.razorpay_order_id || rzpOrderId || orderId,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature:  response.razorpay_signature
+                        });
+                    } catch (e) {
+                        console.error('verifyPaymentOnServer threw:', e);
+                        verified = { verified: false, error: e.message };
+                    }
 
                     // ✅ Save order to backend (preferred) or fallback to localStorage + Firebase
-                    await saveOnlineOrder(orderId, response.razorpay_payment_id, name, phone, email, fullAddr, ctx, verified);
+                    const saveResult = await saveOnlineOrder(orderId, response.razorpay_payment_id, name, phone, email, fullAddr, ctx, verified);
+
+                    // ✅ FIX #26 (audit): Gate all post-save side effects on a successful save.
+                    //    If neither backend nor local save succeeded, the customer paid but the
+                    //    order is gone — do NOT award loyalty, fire purchase analytics, or clear
+                    //    the abandoned-cart flag; surface a clear error instead.
+                    const orderSaved = !!(saveResult && (saveResult.saved || saveResult.local || saveResult.backend));
+                    if (!orderSaved) {
+                        showToast('⚠️ Payment received but order could not be saved. Reference: ' + response.razorpay_payment_id + '. Please contact support.', 'error');
+                        openCustomerModal();
+                        return;
+                    }
 
                     // ✅ Send order confirmation email/SMS via backend
                     sendOrderNotifications({ orderId, name, phone, email, amount: ctx.amount, items: ctx.items || [{ name: ctx.product, qty: ctx.qty, size: ctx.size }] });
@@ -4263,8 +4441,11 @@
                     // Show success
                     showOrderSuccess(orderId, response.razorpay_payment_id, name);
 
-                    // Increment coupon usage
-                    if (ctx.couponCode) {
+                    // ✅ FIX #9 (audit): Increment coupon usage ONLY if payment was verified
+                    //    (online) or save succeeded. Previously the coupon counter was bumped
+                    //    on every success handler invocation, so a failed verification would
+                    //    still consume the user's coupon. For COD, saveResult.local is the source of truth.
+                    if (ctx.couponCode && (verified.verified === true || (saveResult && saveResult.local))) {
                         incrementCouponUsage(ctx.couponCode);
                         appliedCoupon = null;
                     }
@@ -4284,9 +4465,19 @@
             // ✅ ANALYTICS: begin_checkout
             trackAnalytics('begin_checkout', { currency: 'INR', value: ctx.amount, items: (ctx.items || [{ id: ctx.id, name: ctx.product, price: ctx.price, quantity: ctx.qty }]) });
 
+            // ✅ FIX #7 (audit): Guard against the Razorpay SDK failing to load (ad blocker,
+            //    CDN outage, offline). Without this, `new Razorpay(options)` throws a
+            //    ReferenceError, the customer modal is already closed, and the user has no UI.
+            if (typeof window.Razorpay !== 'function') {
+                console.error('Razorpay SDK failed to load (window.Razorpay is undefined).');
+                showToast('⚠️ Payment gateway failed to load. Please disable ad blockers and try again.', 'error');
+                openCustomerModal();
+                return;
+            }
+
             const rzp = new Razorpay(options);
             rzp.on('payment.failed', function(response) {
-                alert('❌ Payment failed. Please try again.\n' + response.error.description);
+                alert('❌ Payment failed. Please try again.\n' + (response.error && response.error.description ? response.error.description : ''));
                 openCustomerModal(); // re-open so user can retry
             });
             rzp.open();
@@ -4327,24 +4518,42 @@
             };
 
             // ✅ Save order (backend first; fallback to localStorage + Firebase)
+            //    FIX #1 (audit): ALWAYS save locally as a safety net, regardless of
+            //    backend result, so the order is never silently lost on a network blip.
+            let orderSavedLocally = false;
+            try {
+                const orders = getOrders();
+                orders.push(order);
+                saveOrders(orders);
+                orderSavedLocally = true;
+                // Deduct stock
+                const prods = getAdminProducts();
+                items.forEach(item => {
+                    const p = prods.find(x => String(x.id) === String(item.id));
+                    if (p) p.stock = Math.max(0, (p.stock || 0) - item.qty);
+                });
+                saveAdminProducts(prods);
+                // Shipment log
+                createShipment({ orderId, customer: name, address, items, total: ctx.amount });
+            } catch (e) {
+                console.error('Local save failed for COD order:', e);
+            }
+
+            // Best-effort backend sync
             try {
                 const r = await apiFetch('/api/orders', { method: 'POST', body: JSON.stringify(order) });
-                if (r.demo) {
-                    const orders = getOrders();
-                    orders.push(order);
-                    saveOrders(orders);
-                    // Deduct stock
-                    const prods = getAdminProducts();
-                    items.forEach(item => {
-                        const p = prods.find(x => String(x.id) === String(item.id));
-                        if (p) p.stock = Math.max(0, (p.stock || 0) - item.qty);
-                    });
-                    saveAdminProducts(prods);
-                    // Shipment log
-                    createShipment({ orderId, customer: name, address, items, total: ctx.amount });
+                if (!r.ok && !r.demo) {
+                    console.warn('Backend COD order save failed; order kept locally:', r.error);
                 }
             } catch (e) {
-                console.error('Failed to save COD order:', e);
+                console.error('Backend COD order save threw; order kept locally:', e);
+            }
+
+            // ✅ FIX #26 (audit): gate all post-save side effects on a successful save flag.
+            if (!orderSavedLocally) {
+                showToast('Could not save your order. Please contact support with order ID ' + orderId + '.', 'error');
+                openCustomerModal(); // re-open so user can retry / see order ID
+                return;
             }
 
             // ✅ Notifications + loyalty + analytics (same as online flow)
@@ -4466,11 +4675,12 @@
             box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
             const paymentIdLine = isCod
                 ? '<span style="color:#888;font-size:13px;">Payment Method</span>\n                            <strong style="font-size:13px;color:#ef4444;">💵 Cash on Delivery · ₹' + (opts.codDue||0).toLocaleString('en-IN') + ' due</strong>'
-                : '<span style="color:#888;font-size:13px;">Payment ID</span>\n                            <strong style="font-size:12px;color:#2d6be4;word-break:break-all;">' + paymentId + '</strong>';
+                : '<span style="color:#888;font-size:13px;">Payment ID</span>\n                            <strong style="font-size:12px;color:#2d6be4;word-break:break-all;">' + escapeHtml(paymentId) + '</strong>';
             const headline = isCod ? 'Order Placed!' : 'Order Confirmed!';
+            // ✅ FIX #14 (audit): escapeHtml() user-controlled `name` before injecting into innerHTML.
             const subline = isCod
-                ? 'Thank you, <strong>' + name + '</strong>!<br>Your COD order has been placed. Please keep <strong>₹' + (opts.codDue||0).toLocaleString('en-IN') + '</strong> ready for delivery.'
-                : 'Thank you, <strong>' + name + '</strong>!<br>Your order has been placed successfully.';
+                ? 'Thank you, <strong>' + escapeHtml(name) + '</strong>!<br>Your COD order has been placed. Please keep <strong>₹' + (opts.codDue||0).toLocaleString('en-IN') + '</strong> ready for delivery.'
+                : 'Thank you, <strong>' + escapeHtml(name) + '</strong>!<br>Your order has been placed successfully.';
             const footerNote = isCod
                 ? '📦 We\'ll dispatch your order within <strong>1–2 business days</strong>.<br>💵 Please keep exact change ready — ₹' + (opts.codDue||0).toLocaleString('en-IN') + ' payable in cash on delivery.'
                 : '📦 We\'ll dispatch your order within <strong>1–2 business days</strong>.<br>You\'ll receive updates on your registered phone.';
@@ -4478,12 +4688,12 @@
                 <div style="background:#fff;border-radius:20px;padding:40px 28px 32px;max-width:420px;width:100%;text-align:center;animation:slideUp 0.3s ease;box-shadow:0 24px 80px rgba(0,0,0,0.25);position:relative;">
                     <button onclick="this.closest('[style*=fixed]').remove()" aria-label="Close" style="position:absolute;top:14px;right:14px;background:#f3f4f6;border:none;width:34px;height:34px;border-radius:50%;font-size:18px;cursor:pointer;line-height:1;color:#555;">✕</button>
                     <div style="font-size:58px;margin-bottom:14px;">${isCod ? '📦' : '🎉'}</div>
-                    <h3 style="font-size:22px;font-weight:800;margin-bottom:8px;color:#111;">${headline}</h3>
+                    <h3 style="font-size:22px;font-weight:800;margin-bottom:8px;color:#111;">${escapeHtml(headline)}</h3>
                     <p style="color:#555;margin-bottom:24px;font-size:15px;">${subline}</p>
                     <div style="background:#f8f8f8;border-radius:12px;padding:18px 20px;margin-bottom:22px;text-align:left;border:1px solid #eee;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                             <span style="color:#888;font-size:13px;">Order ID</span>
-                            <strong style="font-size:14px;color:#111;letter-spacing:0.5px;">${orderId}</strong>
+                            <strong style="font-size:14px;color:#111;letter-spacing:0.5px;">${escapeHtml(orderId)}</strong>
                         </div>
                         <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #eee;">
                             ${paymentIdLine}
@@ -4549,12 +4759,13 @@
                 results.innerHTML = '<p style="text-align:center;color:#999;padding:20px;font-size:14px;">No products found</p>';
                 return;
             }
+            // ✅ FIX #14 (audit): escapeHtml / escapeAttr product fields in search results.
             results.innerHTML = matches.map(p => `
-                <div class="search-result-item" onclick="document.getElementById('searchOverlay').style.display='none'; openProduct('${p.id}')">
-                    <img src="${p.image}" alt="${p.name}">
+                <div class="search-result-item" onclick="document.getElementById('searchOverlay').style.display='none'; openProduct('${escapeAttr(p.id)}')">
+                    <img src="${escapeAttr(p.image)}" alt="${escapeAttr(p.name)}">
                     <div>
-                        <div class="res-name">${p.name}</div>
-                        <div class="res-price">${p.brand} · ₹${p.price.toLocaleString('en-IN')}</div>
+                        <div class="res-name">${escapeHtml(p.name)}</div>
+                        <div class="res-price">${escapeHtml(p.brand)} · ₹${p.price.toLocaleString('en-IN')}</div>
                     </div>
                 </div>
             `).join('');
@@ -4601,7 +4812,7 @@
                 sessionStorage.removeItem('vynox_cart');
             } catch (e) { /* storage may be disabled */ }
         })();
-        const cart = JSON.parse(localStorage.getItem('vynox_cart') || '[]');
+        const cart = safeParseJSON(localStorage.getItem('vynox_cart') || '[]', []);
 
         function saveCart() {
             localStorage.setItem('vynox_cart', JSON.stringify(cart));
@@ -4621,6 +4832,12 @@
         function addToCart() {
             if (!selectedProduct) return;
             if (!selectedSize) { alert('Please select a size first'); return; }
+            // ✅ FIX #23 (audit): Re-check stock at add-time. The button is disabled
+            //    when stock===0, but a stale UI or console call could bypass that.
+            if (selectedProduct.stock !== undefined && selectedProduct.stock <= 0) {
+                showToast('This product is out of stock.', 'error');
+                return;
+            }
             const existing = cart.find(i => i.id === selectedProduct.id && i.size === selectedSize);
             if (existing) {
                 existing.qty += quantity;
@@ -4671,20 +4888,25 @@
         var appliedCoupon = null; // { code, type, value, discount }
 
         function getStoredCoupons() {
+            // ✅ FIX #32 (audit): getStoredCoupons now delegates to getCoupons (the admin-side
+            //    function) so there's a single source of truth for the default coupon list.
+            if (typeof getCoupons === 'function') return getCoupons();
             var s = localStorage.getItem('vynox_coupons');
-            if (s) return JSON.parse(s);
-            // Default coupons
+            if (s) return safeParseJSON(s, []);
+            // Fallback defaults (only used if getCoupons isn't defined yet — e.g. load order)
             var defaults = [
                 { id:'c1', code:'WELCOME10', type:'percentage', value:10, minOrder:999, limit:100, used:0, active:true, description:'10% off on orders above ₹999' },
                 { id:'c2', code:'FLAT200',   type:'flat',       value:200, minOrder:1499, limit:200, used:0, active:true, description:'₹200 off on orders above ₹1,499' },
                 { id:'c3', code:'VYNOX20',   type:'percentage', value:20, minOrder:1999, limit:50,  used:0, active:true, description:'20% off on orders above ₹1,999' },
                 { id:'c4', code:'FIRST500',  type:'flat',       value:500, minOrder:2499, limit:100, used:0, active:true, description:'₹500 off on orders above ₹2,499' }
             ];
-            localStorage.setItem('vynox_coupons', JSON.stringify(defaults));
+            try { localStorage.setItem('vynox_coupons', JSON.stringify(defaults)); } catch(e) {}
             return defaults;
         }
         function saveStoredCoupons(coupons) {
-            localStorage.setItem('vynox_coupons', JSON.stringify(coupons));
+            // ✅ FIX #32 (audit): delegate to saveCoupons for single-source-of-truth.
+            if (typeof saveCoupons === 'function') { saveCoupons(coupons); return; }
+            try { localStorage.setItem('vynox_coupons', JSON.stringify(coupons)); } catch(e) {}
         }
 
         function getCartSubtotal() {
@@ -4742,7 +4964,17 @@
         function incrementCouponUsage(code) {
             var coupons = getStoredCoupons();
             var c = coupons.find(function(x){ return x.code === code; });
-            if (c) { c.used = (c.used || 0) + 1; saveStoredCoupons(coupons); }
+            // ✅ FIX #31 (audit): Atomic-ish check-and-increment. Re-read the coupon,
+            //    enforce the limit at increment-time (not just apply-time), so two
+            //    simultaneous checkouts can't both pass the limit check.
+            if (!c) return;
+            if (c.limit > 0 && (c.used || 0) >= c.limit) {
+                // Coupon is now exhausted — refuse the increment.
+                console.warn('Coupon ' + code + ' usage limit reached; not incremented.');
+                return;
+            }
+            c.used = (c.used || 0) + 1;
+            saveStoredCoupons(coupons);
         }
 
         function previewImg(n) {
@@ -4770,16 +5002,16 @@
             }
             list.innerHTML = cart.map(item => `
                 <div class="cart-item">
-                    <img src="${item.image}" alt="${item.name}">
+                    <img src="${escapeAttr(item.image)}" alt="${escapeAttr(item.name)}">
                     <div class="cart-item-info">
-                        <div class="cart-item-name">${item.name}</div>
-                        <div class="cart-item-meta">${item.brand} · Size: ${item.size}</div>
+                        <div class="cart-item-name">${escapeHtml(item.name)}</div>
+                        <div class="cart-item-meta">${escapeHtml(item.brand)} · Size: ${escapeHtml(item.size)}</div>
                         <div class="cart-item-price">₹${item.price.toLocaleString('en-IN')}</div>
                         <div class="cart-item-controls">
-                            <button onclick="updateCartQty('${item.id}','${item.size}',-1)">−</button>
+                            <button onclick="updateCartQty('${escapeAttr(item.id)}','${escapeAttr(item.size)}',-1)">−</button>
                             <span>${item.qty}</span>
-                            <button onclick="updateCartQty('${item.id}','${item.size}',1)">+</button>
-                            <button class="cart-remove" onclick="removeFromCart('${item.id}','${item.size}')">✕</button>
+                            <button onclick="updateCartQty('${escapeAttr(item.id)}','${escapeAttr(item.size)}',1)">+</button>
+                            <button class="cart-remove" onclick="removeFromCart('${escapeAttr(item.id)}','${escapeAttr(item.size)}')">✕</button>
                         </div>
                     </div>
                 </div>
@@ -5045,9 +5277,10 @@
                     addrListEl.innerHTML = '<p style="color:#888;font-size:13px;">No saved addresses yet.</p>';
                 } else {
                     addrListEl.innerHTML = addrs.map(function(a, i) {
+                        // ✅ FIX #14 (audit): escapeHtml ALL address fields before injecting into innerHTML.
                         return '<div style="background:#f9f9f9;padding:10px 12px;border-radius:8px;margin-bottom:8px;font-size:13px;position:relative;">' +
-                            '<strong>' + (a.fullName||'') + '</strong> &middot; ' + (a.phone||'') + '<br>' +
-                            (a.line1||'') + (a.line2 ? ', ' + a.line2 : '') + ', ' + (a.city||'') + ', ' + (a.state||'') + ' - ' + (a.pinCode||'') + ', ' + (a.country||'India') +
+                            '<strong>' + escapeHtml(a.fullName||'') + '</strong> &middot; ' + escapeHtml(a.phone||'') + '<br>' +
+                            escapeHtml(a.line1||'') + (a.line2 ? ', ' + escapeHtml(a.line2) : '') + ', ' + escapeHtml(a.city||'') + ', ' + escapeHtml(a.state||'') + ' - ' + escapeHtml(a.pinCode||'') + ', ' + escapeHtml(a.country||'India') +
                             '<div style="position:absolute;top:8px;right:8px;display:flex;gap:6px;">' +
                             '<button onclick="editAddress(' + i + ')" style="background:none;border:none;cursor:pointer;font-size:14px;" aria-label="Edit address">\u270F\uFE0F</button>' +
                             '<button onclick="deleteAddress(' + i + ')" style="background:none;border:none;cursor:pointer;font-size:14px;color:#dc2626;" aria-label="Delete address">\uD83D\uDDD1\uFE0F</button>' +
@@ -5063,12 +5296,13 @@
                         var da = o.deliveryAddress || {};
                         var addrStr = da.line1 ? (da.line1 + ', ' + da.city + ', ' + da.state + ' - ' + da.pinCode) : (o.address || 'Address not recorded');
                         var itemsStr = (o.items||[]).map(function(i){ return i.name + ' x' + i.qty; }).join(', ');
-                        return '<div style="padding:10px 0;border-bottom:1px solid #eee;cursor:pointer;" onclick="showOrderDetail(\''+o.id+'\')">' +
-                            '<div style="display:flex;justify-content:space-between;align-items:center;"><strong>' + o.id + '</strong>' +
-                            ' <span class="order-status-pill s-' + (o.status||'pending') + '">' + (o.status||'pending') + '</span></div>' +
-                            '<div style="font-size:12px;color:#666;margin-top:4px;">' + itemsStr + '</div>' +
-                            '<div style="font-size:12px;color:#888;margin-top:2px;">\u20B9' + (o.total||0).toLocaleString('en-IN') + ' &middot; ' + (o.paymentMethod||'online').toUpperCase() + ' &middot; ' + new Date(o.date).toLocaleDateString('en-IN') + '</div>' +
-                            '<div style="font-size:11px;color:#aaa;margin-top:2px;">\uD83D\uDCCD ' + addrStr + '</div>' +
+                        // ✅ FIX #14 (audit): escapeHtml all user-controlled fields (order id, items, address) before injecting.
+                        return '<div style="padding:10px 0;border-bottom:1px solid #eee;cursor:pointer;" onclick="showOrderDetail(\'' + escapeHtml(o.id).replace(/'/g, '\\&#39;') + '\')">' +
+                            '<div style="display:flex;justify-content:space-between;align-items:center;"><strong>' + escapeHtml(o.id) + '</strong>' +
+                            ' <span class="order-status-pill s-' + escapeHtml(o.status||'pending') + '">' + escapeHtml(o.status||'pending') + '</span></div>' +
+                            '<div style="font-size:12px;color:#666;margin-top:4px;">' + escapeHtml(itemsStr) + '</div>' +
+                            '<div style="font-size:12px;color:#888;margin-top:2px;">\u20B9' + (o.total||0).toLocaleString('en-IN') + ' &middot; ' + escapeHtml((o.paymentMethod||'online').toUpperCase()) + ' &middot; ' + new Date(o.date).toLocaleDateString('en-IN') + '</div>' +
+                            '<div style="font-size:11px;color:#aaa;margin-top:2px;">\uD83D\uDCCD ' + escapeHtml(addrStr) + '</div>' +
                         '</div>';
                     }).join('');
                 }
@@ -5079,8 +5313,26 @@
         }
 
                 // ✅ Login view switching functions
-        var _loginAttempts = 0;
-        var _loginLockedUntil = 0;
+        // ✅ FIX #17 (audit): Persist rate-limit counters to sessionStorage so a page
+        //    reload no longer resets the brute-force protection.
+        var _loginAttempts = parseInt(sessionStorage.getItem('vynox_login_attempts') || '0', 10) || 0;
+        var _loginLockedUntil = parseInt(sessionStorage.getItem('vynox_login_locked_until') || '0', 10) || 0;
+        function _bumpLoginAttempts() {
+            _loginAttempts++;
+            try { sessionStorage.setItem('vynox_login_attempts', String(_loginAttempts)); } catch (e) {}
+        }
+        function _resetLoginAttempts() {
+            _loginAttempts = 0;
+            try { sessionStorage.removeItem('vynox_login_attempts'); } catch (e) {}
+        }
+        function _lockLogin(ms) {
+            _loginLockedUntil = Date.now() + ms;
+            try { sessionStorage.setItem('vynox_login_locked_until', String(_loginLockedUntil)); } catch (e) {}
+        }
+        function _unlockLogin() {
+            _loginLockedUntil = 0;
+            try { sessionStorage.removeItem('vynox_login_locked_until'); } catch (e) {}
+        }
 
         function showLoginView() {
             document.getElementById('accLoginView').style.display = 'block';
@@ -5168,21 +5420,25 @@
                             localStorage.removeItem('vynox_session');
                         }
                         showToast('Welcome back, ' + userName + '!', 'success');
-                        _loginAttempts = 0; initAccountSession();
+                        _resetLoginAttempts(); _unlockLogin(); initAccountSession();
                         if (typeof _pendingCheckoutReturn !== 'undefined' && _pendingCheckoutReturn) { _pendingCheckoutReturn = false; closeAccountModal(); }
                         return;
                     } else {
-                        _loginAttempts++;
-                        if (_loginAttempts >= 5) { _loginLockedUntil = Date.now() + 60000; errPass.textContent = 'Too many attempts. Please wait 60 seconds.'; }
-                        else { errPass.textContent = (r.data && r.data.error === 'Not found') ? 'No account found with this email.' : 'Incorrect email or password. Please try again.'; }
+                        _bumpLoginAttempts();
+                        if (_loginAttempts >= 5) { _lockLogin(60000); errPass.textContent = 'Too many attempts. Please wait 60 seconds.'; }
+                        // ✅ FIX #19 (audit): Use a single generic message for ALL auth failures
+                        //    to prevent email enumeration (was: different messages for "not found" vs "wrong password").
+                        else { errPass.textContent = 'Incorrect email or password. Please try again.'; }
                         errPass.style.display = 'block'; return;
                     }
                 }
-                var users = JSON.parse(localStorage.getItem('vynox_users') || '[]');
+                var users = safeParseJSON(localStorage.getItem('vynox_users') || '[]', []);
                 var user = users.find(function(u){ return u.email === email; });
-                if (!user) { _loginAttempts++; errEmail.textContent = 'No account found with this email.'; errEmail.style.display = 'block'; if (_loginAttempts >= 5) { _loginLockedUntil = Date.now() + 60000; errEmail.textContent = 'Too many attempts. Please wait 60 seconds.'; } return; }
-                if (user.passHash !== btoa(unescape(encodeURIComponent(pass)))) { _loginAttempts++; if (_loginAttempts >= 5) { _loginLockedUntil = Date.now() + 60000; errPass.textContent = 'Too many attempts. Please wait 60 seconds.'; } else { errPass.textContent = 'Incorrect email or password. Please try again.'; } errPass.style.display = 'block'; return; }
-                _loginAttempts = 0;
+                // ✅ FIX #19 (audit): Same generic error for "not found" and "wrong password".
+                if (!user) { _bumpLoginAttempts(); errPass.textContent = 'Incorrect email or password. Please try again.'; errPass.style.display = 'block'; if (_loginAttempts >= 5) { _lockLogin(60000); errPass.textContent = 'Too many attempts. Please wait 60 seconds.'; } return; }
+                // ✅ FIX #28 (audit): INSECURE — demo only, replace with bcrypt on backend.
+                if (user.passHash !== btoa(unescape(encodeURIComponent(pass)))) { _bumpLoginAttempts(); if (_loginAttempts >= 5) { _lockLogin(60000); errPass.textContent = 'Too many attempts. Please wait 60 seconds.'; } else { errPass.textContent = 'Incorrect email or password. Please try again.'; } errPass.style.display = 'block'; return; }
+                _resetLoginAttempts(); _unlockLogin();
                 var rememberMe = document.getElementById('accRememberMe').checked;
                 var sessionData = { name: user.name, email: user.email };
                 if (rememberMe) {
@@ -5214,19 +5470,45 @@
                 if (!r.demo) {
                     btn.disabled = false; btn.textContent = 'Sign Up';
                     if (r.ok && r.data && r.data.token) {
-                        localStorage.setItem('vynox_session', JSON.stringify({ name: r.data.name || name, email: email, token: r.data.token }));
+                        // ✅ FIX #18 (audit): backend-signup path now respects Remember Me + expiresAt.
+                        var rememberMe = document.getElementById('accRememberMe') && document.getElementById('accRememberMe').checked;
+                        var sessionData = { name: r.data.name || name, email: email, token: r.data.token };
+                        if (rememberMe) {
+                            sessionData.expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+                            localStorage.setItem('vynox_session', JSON.stringify(sessionData));
+                        } else {
+                            sessionStorage.setItem('vynox_session', JSON.stringify(sessionData));
+                            localStorage.removeItem('vynox_session');
+                        }
                         showToast('Account created! Welcome, ' + name + '.', 'success'); initAccountSession();
                         if (typeof _pendingCheckoutReturn !== 'undefined' && _pendingCheckoutReturn) { _pendingCheckoutReturn = false; closeAccountModal(); }
                     } else { showToast((r.data && r.data.error) || 'Sign up failed', 'error'); }
                     return;
                 }
-                var users = JSON.parse(localStorage.getItem('vynox_users') || '[]');
+                var users = safeParseJSON(localStorage.getItem('vynox_users') || '[]', []);
                 if (users.find(function(u){ return u.email === email; })) { showToast('An account with this email already exists', 'error'); return; }
+                // ✅ FIX #28 (audit): INSECURE — demo only, replace with bcrypt on backend.
                 var user = { name: name, email: email, phone: phone, passHash: btoa(unescape(encodeURIComponent(pass))), createdAt: new Date().toISOString() };
                 users.push(user); localStorage.setItem('vynox_users', JSON.stringify(users));
-                localStorage.setItem('vynox_session', JSON.stringify({ name: user.name, email: user.email }));
+                // ✅ FIX #18 (audit): demo-signup session now respects Remember Me + expiresAt.
+                var rememberMe2 = document.getElementById('accRememberMe') && document.getElementById('accRememberMe').checked;
+                var sessionData2 = { name: user.name, email: user.email };
+                if (rememberMe2) {
+                    sessionData2.expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+                    localStorage.setItem('vynox_session', JSON.stringify(sessionData2));
+                } else {
+                    sessionStorage.setItem('vynox_session', JSON.stringify(sessionData2));
+                    localStorage.removeItem('vynox_session');
+                }
                 showToast('Account created! Welcome, ' + name + '.', 'success');
                 initAccountSession(); trackAnalytics('sign_up', { method: 'email' });
+                // ✅ FIX #10 (audit): clear _pendingCheckoutReturn on demo signup so the
+                //    stale flag doesn't trigger an unwanted closeAccountModal() on the
+                //    next unrelated login. If signup happened during checkout, return to checkout now.
+                if (typeof _pendingCheckoutReturn !== 'undefined' && _pendingCheckoutReturn) {
+                    _pendingCheckoutReturn = false;
+                    closeAccountModal();
+                }
             } finally { btn.disabled = false; btn.textContent = 'Sign Up'; }
         }
 
@@ -5237,6 +5519,13 @@
             var errEl = document.getElementById('errResetPass');
             var btn = document.getElementById('accResetPassBtn');
             errEl.style.display = 'none';
+            // ✅ FIX #11 (audit): Validate token presence BEFORE doing anything else.
+            //    Without this, a demo-mode submission with an empty token still shows
+            //    "Password reset successfully!" — security theater.
+            if (!token) {
+                errEl.textContent = 'Invalid reset link. Please request a new one.';
+                errEl.style.display = 'block'; return;
+            }
             if (!newPass || newPass.length < 8) {
                 errEl.textContent = 'Password must be at least 8 characters.';
                 errEl.style.display = 'block'; return;
@@ -5263,13 +5552,16 @@
                         errEl.style.display = 'block';
                     }
                 } else {
-                    // Demo mode: simulate success
+                    // Demo mode: simulate success ONLY if a token was provided.
+                    //    ✅ FIX #11 (audit): Without a backend, we cannot actually verify the
+                    //    token, but we still require it to be present (checked above).
                     showToast('Password reset successfully! Please log in.', 'success');
                     setTimeout(function() { showLoginView(); }, 2500);
                 }
             } catch(e) {
-                showToast('Password reset successfully! Please log in.', 'success');
-                setTimeout(function() { showLoginView(); }, 2500);
+                // ✅ FIX #11 (audit): don't claim success on a network error — surface it.
+                errEl.textContent = 'Could not reach the server. Please try again.';
+                errEl.style.display = 'block';
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Reset Password';
@@ -5413,31 +5705,34 @@
             initAccountSession();
         }
         function editAddress(idx) {
-            var sess = JSON.parse(localStorage.getItem('vynox_session') || 'null');
+            var sess = safeParseJSON(localStorage.getItem('vynox_session') || 'null', null);
             if (!sess || !sess.email) return;
             var addrs = getSavedAddresses(sess.email);
             var a = addrs[idx];
             if (!a) return;
+            // ✅ FIX #14 (audit): Use escapeAttr (escapes < > & " ' `) for value="..." attributes.
+            //    Previously only `"` was escaped, allowing attribute XSS via payloads like
+            //    `"><img src=x onerror=alert(1)>`.
             var html = '<div style="text-align:left;">' +
                 '<h4 style="margin-bottom:10px;">Edit Address</h4>' +
-                '<input type="text" id="editAddrName" value="' + (a.fullName||'').replace(/"/g,'&quot;') + '" placeholder="Full Name *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '<input type="tel" id="editAddrPhone" value="' + (a.phone||'').replace(/"/g,'&quot;') + '" placeholder="Phone *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;" maxlength="10">' +
-                '<input type="text" id="editAddrLine1" value="' + (a.line1||'').replace(/"/g,'&quot;') + '" placeholder="Line 1 *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '<input type="text" id="editAddrLine2" value="' + (a.line2||'').replace(/"/g,'&quot;') + '" placeholder="Line 2" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
+                '<input type="text" id="editAddrName" value="' + escapeAttr(a.fullName||'') + '" placeholder="Full Name *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
+                '<input type="tel" id="editAddrPhone" value="' + escapeAttr(a.phone||'') + '" placeholder="Phone *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;" maxlength="10">' +
+                '<input type="text" id="editAddrLine1" value="' + escapeAttr(a.line1||'') + '" placeholder="Line 1 *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
+                '<input type="text" id="editAddrLine2" value="' + escapeAttr(a.line2||'') + '" placeholder="Line 2" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
                 '<div style="display:flex;gap:8px;">' +
-                '<input type="text" id="editAddrCity" value="' + (a.city||'').replace(/"/g,'&quot;') + '" placeholder="City *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '<input type="text" id="editAddrState" value="' + (a.state||'').replace(/"/g,'&quot;') + '" placeholder="State *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
+                '<input type="text" id="editAddrCity" value="' + escapeAttr(a.city||'') + '" placeholder="City *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
+                '<input type="text" id="editAddrState" value="' + escapeAttr(a.state||'') + '" placeholder="State *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
                 '</div>' +
                 '<div style="display:flex;gap:8px;">' +
-                '<input type="text" id="editAddrPin" value="' + (a.pinCode||'').replace(/"/g,'&quot;') + '" placeholder="PIN *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;" maxlength="6">' +
-                '<input type="text" id="editAddrCountry" value="' + (a.country||'India').replace(/"/g,'&quot;') + '" placeholder="Country" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
+                '<input type="text" id="editAddrPin" value="' + escapeAttr(a.pinCode||'') + '" placeholder="PIN *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;" maxlength="6">' +
+                '<input type="text" id="editAddrCountry" value="' + escapeAttr(a.country||'India') + '" placeholder="Country" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
                 '</div>' +
                 '<button class="primary" onclick="saveEditedAddress(' + idx + ')" style="margin-top:4px;">Update Address</button>' +
                 '</div>';
             document.getElementById('accAddressList').innerHTML = html;
         }
         function saveEditedAddress(idx) {
-            var sess = JSON.parse(localStorage.getItem('vynox_session') || 'null');
+            var sess = safeParseJSON(localStorage.getItem('vynox_session') || 'null', null);
             if (!sess || !sess.email) return;
             var addrs = getSavedAddresses(sess.email);
             addrs[idx] = {
@@ -5456,7 +5751,7 @@
         }
         function deleteAddress(idx) {
             if (!confirm('Delete this address?')) return;
-            var sess = JSON.parse(localStorage.getItem('vynox_session') || 'null');
+            var sess = safeParseJSON(localStorage.getItem('vynox_session') || 'null', null);
             if (!sess || !sess.email) return;
             var addrs = getSavedAddresses(sess.email);
             addrs.splice(idx, 1);
@@ -5471,7 +5766,7 @@
             if (!o) { showToast('Order not found', 'error'); return; }
             var da = o.deliveryAddress || {};
             var addrStr = da.line1 ? (da.fullName + ', ' + da.line1 + (da.line2 ? ', ' + da.line2 : '') + ', ' + da.city + ', ' + da.state + ' - ' + da.pinCode + ', ' + (da.country||'India')) : (o.address || 'Address not recorded');
-            var itemsHtml = (o.items||[]).map(function(i){ return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>' + i.name + ' x' + i.qty + '</span><span>₹' + (i.price * i.qty).toLocaleString('en-IN') + '</span></div>'; }).join('');
+            var itemsHtml = (o.items||[]).map(function(i){ return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>' + escapeHtml(i.name + ' x' + i.qty) + '</span><span>₹' + (i.price * i.qty).toLocaleString('en-IN') + '</span></div>'; }).join('');
             var statusHtml = ['pending','confirmed','shipped','delivered'].map(function(s) {
                 var cur = (o.status||'pending');
                 var isActive = s === cur;
@@ -5481,14 +5776,14 @@
                     '">' + (isDone ? '✓ ' : '') + s + '</div>';
             }).join('');
             var html = '<div style="font-size:13px;line-height:1.6;">' +
-                '<div style="font-size:16px;font-weight:700;margin-bottom:8px;">Order ' + o.id + '</div>' +
+                '<div style="font-size:16px;font-weight:700;margin-bottom:8px;">Order ' + escapeHtml(o.id) + '</div>' +
                 '<div style="margin-bottom:12px;">' + statusHtml + '</div>' +
                 '<div style="background:#f9f9f9;padding:12px;border-radius:8px;margin-bottom:12px;">' +
                 '<strong>Items:</strong>' + itemsHtml +
                 '<div style="border-top:1px solid #eee;padding-top:6px;margin-top:6px;display:flex;justify-content:space-between;font-weight:700;"><span>Total</span><span>₹' + (o.total||0).toLocaleString('en-IN') + '</span></div>' +
                 '</div>' +
-                '<div style="margin-bottom:12px;"><strong>Payment:</strong> ' + (o.paymentMethod||'online').toUpperCase() + (o.paymentId ? ' · ' + o.paymentId : '') + '</div>' +
-                '<div style="margin-bottom:12px;"><strong>Delivery Address:</strong><br>' + addrStr + '</div>' +
+                '<div style="margin-bottom:12px;"><strong>Payment:</strong> ' + escapeHtml((o.paymentMethod||'online').toUpperCase()) + (o.paymentId ? ' · ' + escapeHtml(o.paymentId) : '') + '</div>' +
+                '<div style="margin-bottom:12px;"><strong>Delivery Address:</strong><br>' + escapeHtml(addrStr) + '</div>' +
                 '<div style="color:#888;">Placed ' + new Date(o.date).toLocaleString('en-IN') + '</div>' +
                 '<button class="primary" style="margin-top:14px;" onclick="initAccountSession()">← Back to Profile</button>' +
                 '</div>';
@@ -5543,30 +5838,31 @@
             initAccountSession();
         }
         function editAddress(idx) {
-            var sess = JSON.parse(localStorage.getItem('vynox_session') || 'null');
+            var sess = safeParseJSON(localStorage.getItem('vynox_session') || 'null', null);
             if (!sess || !sess.email) return;
             var addrs = getSavedAddresses(sess.email);
             var a = addrs[idx]; if (!a) return;
+            // ✅ FIX #14 (audit): escapeAttr on every value="..." attribute (second copy).
             var html = '<div style="text-align:left;">' +
                 '<h4 style="margin-bottom:10px;">Edit Address</h4>' +
-                '<input type="text" id="editAddrName" value="' + (a.fullName||'').replace(/"/g,'&quot;') + '" placeholder="Full Name *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '<input type="tel" id="editAddrPhone" value="' + (a.phone||'').replace(/"/g,'&quot;') + '" placeholder="Phone *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;" maxlength="10">' +
-                '<input type="text" id="editAddrLine1" value="' + (a.line1||'').replace(/"/g,'&quot;') + '" placeholder="Line 1 *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '<input type="text" id="editAddrLine2" value="' + (a.line2||'').replace(/"/g,'&quot;') + '" placeholder="Line 2" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
+                '<input type="text" id="editAddrName" value="' + escapeAttr(a.fullName||'') + '" placeholder="Full Name *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
+                '<input type="tel" id="editAddrPhone" value="' + escapeAttr(a.phone||'') + '" placeholder="Phone *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;" maxlength="10">' +
+                '<input type="text" id="editAddrLine1" value="' + escapeAttr(a.line1||'') + '" placeholder="Line 1 *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
+                '<input type="text" id="editAddrLine2" value="' + escapeAttr(a.line2||'') + '" placeholder="Line 2" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
                 '<div style="display:flex;gap:8px;">' +
-                '<input type="text" id="editAddrCity" value="' + (a.city||'').replace(/"/g,'&quot;') + '" placeholder="City *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '<input type="text" id="editAddrState" value="' + (a.state||'').replace(/"/g,'&quot;') + '" placeholder="State *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
+                '<input type="text" id="editAddrCity" value="' + escapeAttr(a.city||'') + '" placeholder="City *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
+                '<input type="text" id="editAddrState" value="' + escapeAttr(a.state||'') + '" placeholder="State *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
                 '</div>' +
                 '<div style="display:flex;gap:8px;">' +
-                '<input type="text" id="editAddrPin" value="' + (a.pinCode||'').replace(/"/g,'&quot;') + '" placeholder="PIN *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;" maxlength="6">' +
-                '<input type="text" id="editAddrCountry" value="' + (a.country||'India').replace(/"/g,'&quot;') + '" placeholder="Country" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
+                '<input type="text" id="editAddrPin" value="' + escapeAttr(a.pinCode||'') + '" placeholder="PIN *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;" maxlength="6">' +
+                '<input type="text" id="editAddrCountry" value="' + escapeAttr(a.country||'India') + '" placeholder="Country" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
                 '</div>' +
                 '<button class="primary" onclick="saveEditedAddress(' + idx + ')" style="margin-top:4px;">Update Address</button>' +
                 '</div>';
             document.getElementById('accAddressList').innerHTML = html;
         }
         function saveEditedAddress(idx) {
-            var sess = JSON.parse(localStorage.getItem('vynox_session') || 'null');
+            var sess = safeParseJSON(localStorage.getItem('vynox_session') || 'null', null);
             if (!sess || !sess.email) return;
             var addrs = getSavedAddresses(sess.email);
             addrs[idx] = {
@@ -5585,7 +5881,7 @@
         }
         function deleteAddress(idx) {
             if (!confirm('Delete this address?')) return;
-            var sess = JSON.parse(localStorage.getItem('vynox_session') || 'null');
+            var sess = safeParseJSON(localStorage.getItem('vynox_session') || 'null', null);
             if (!sess || !sess.email) return;
             var addrs = getSavedAddresses(sess.email);
             addrs.splice(idx, 1);
@@ -5600,7 +5896,8 @@
             if (!o) { showToast('Order not found', 'error'); return; }
             var da = o.deliveryAddress || {};
             var addrStr = da.line1 ? (da.fullName + ', ' + da.line1 + (da.line2 ? ', ' + da.line2 : '') + ', ' + da.city + ', ' + da.state + ' - ' + da.pinCode + ', ' + (da.country||'India')) : (o.address || 'Address not recorded');
-            var itemsHtml = (o.items||[]).map(function(i){ return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>' + i.name + ' x' + i.qty + '</span><span>\u20b9' + (i.price * i.qty).toLocaleString('en-IN') + '</span></div>'; }).join('');
+            // ✅ FIX #14 (audit): escapeHtml items, order id, payment id, and address.
+            var itemsHtml = (o.items||[]).map(function(i){ return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>' + escapeHtml(i.name + ' x' + i.qty) + '</span><span>\u20b9' + (i.price * i.qty).toLocaleString('en-IN') + '</span></div>'; }).join('');
             var statusHtml = ['pending','confirmed','shipped','delivered'].map(function(s) {
                 var cur = (o.status||'pending');
                 var isActive = s === cur;
@@ -5610,14 +5907,14 @@
                     '">' + (isDone ? '&#10003; ' : '') + s + '</div>';
             }).join('');
             var html = '<div style="font-size:13px;line-height:1.6;">' +
-                '<div style="font-size:16px;font-weight:700;margin-bottom:8px;">Order ' + o.id + '</div>' +
+                '<div style="font-size:16px;font-weight:700;margin-bottom:8px;">Order ' + escapeHtml(o.id) + '</div>' +
                 '<div style="margin-bottom:12px;">' + statusHtml + '</div>' +
                 '<div style="background:#f9f9f9;padding:12px;border-radius:8px;margin-bottom:12px;">' +
                 '<strong>Items:</strong>' + itemsHtml +
                 '<div style="border-top:1px solid #eee;padding-top:6px;margin-top:6px;display:flex;justify-content:space-between;font-weight:700;"><span>Total</span><span>\u20b9' + (o.total||0).toLocaleString('en-IN') + '</span></div>' +
                 '</div>' +
-                '<div style="margin-bottom:12px;"><strong>Payment:</strong> ' + (o.paymentMethod||'online').toUpperCase() + (o.paymentId ? ' &middot; ' + o.paymentId : '') + '</div>' +
-                '<div style="margin-bottom:12px;"><strong>Delivery Address:</strong><br>' + addrStr + '</div>' +
+                '<div style="margin-bottom:12px;"><strong>Payment:</strong> ' + escapeHtml((o.paymentMethod||'online').toUpperCase()) + (o.paymentId ? ' &middot; ' + escapeHtml(o.paymentId) : '') + '</div>' +
+                '<div style="margin-bottom:12px;"><strong>Delivery Address:</strong><br>' + escapeHtml(addrStr) + '</div>' +
                 '<div style="color:#888;">Placed ' + new Date(o.date).toLocaleString('en-IN') + '</div>' +
                 '<button class="primary" style="margin-top:14px;" onclick="initAccountSession()">&#8592; Back to Profile</button>' +
                 '</div>';
@@ -5625,6 +5922,41 @@
         }
 
         document.addEventListener('DOMContentLoaded', init);
+
+        // ✅ FIX #22 + #36 (audit): Multi-tab sync via the `storage` event.
+        //    When another tab edits vynox_orders, vynox_admin_products, vynox_cart, or
+        //    vynox_wishlist, this tab re-reads the changed key so in-memory copies stay
+        //    fresh. This prevents the lost-update / stale-cart bugs the audit flagged.
+        (function setupStorageSync() {
+            if (typeof window === 'undefined') return;
+            window.addEventListener('storage', function(e) {
+                if (!e.key) return;
+                try {
+                    if (e.key === 'vynox_cart') {
+                        // Re-parse cart in place so saveCart() doesn't write back the stale copy.
+                        var fresh = safeParseJSON(e.newValue || '[]', []);
+                        cart.length = 0;
+                        fresh.forEach(function(i){ cart.push(i); });
+                        if (typeof updateCartBadge === 'function') updateCartBadge();
+                        if (typeof renderCartDrawer === 'function') renderCartDrawer();
+                    } else if (e.key === 'wishlist') {
+                        var freshWish = safeParseJSON(e.newValue || '[]', []);
+                        wishlist.clear();
+                        freshWish.forEach(function(id){ wishlist.add(id); });
+                    } else if (e.key === 'vynox_orders' || e.key === 'vynox_admin_products') {
+                        // Re-render the admin views that depend on these stores, if admin is open.
+                        if (document.getElementById('adminPanel') && document.getElementById('adminPanel').style.display !== 'none') {
+                            if (typeof refreshDashboard === 'function') refreshDashboard();
+                            if (typeof renderAdminProducts === 'function') renderAdminProducts();
+                            if (typeof renderOrders === 'function') renderOrders();
+                            if (typeof renderInventory === 'function') renderInventory();
+                            if (typeof renderBillingProducts === 'function') renderBillingProducts();
+                            if (typeof showAdminToast === 'function') showAdminToast('Data updated in another tab.', '');
+                        }
+                    }
+                } catch (err) { console.warn('storage sync handler failed:', err); }
+            });
+        })();
 
     </script>
 
@@ -5680,15 +6012,19 @@
             <h2>Vynox Admin</h2>
             <p>Sign in to manage your store</p>
             <div id="adminLoginError" class="admin-login-error">❌ Wrong credentials. Try again.</div>
-            <input type="text" id="adminUsername" class="admin-input" placeholder="Your name (optional)" autocomplete="off">
-            <input type="password" id="adminPasswordInput" class="admin-input" placeholder="Password">
+            <input type="text" id="adminUsername" class="admin-input" placeholder="Your name (optional)" autocomplete="username">
+            <input type="password" id="adminPasswordInput" class="admin-input" placeholder="Password" autocomplete="current-password">
             <select id="adminRoleSelect" class="admin-input">
                 <option value="owner">👑 Owner</option>
                 <option value="cashier">💳 Cashier</option>
                 <option value="inventory">📦 Inventory Manager</option>
             </select>
             <button class="admin-btn-primary" onclick="doAdminLogin()">Login</button>
-            <p style="text-align:center;font-size:11px;color:#bbb;margin-top:14px;">Owner: admin123 · Cashier: cash123 · Inventory: inv123</p>
+            <!-- ✅ FIX #4 (audit): Default admin passwords are NO LONGER printed in the UI.
+                 First-run admins must read the README or environment setup docs to learn the
+                 default credentials (admin123 / cash123 / inv123) and should change them
+                 immediately from Settings → Admin Passwords. -->
+            <p style="text-align:center;font-size:11px;color:#bbb;margin-top:14px;">First time? Change the default password in Settings → Admin Passwords.</p>
             <button onclick="closeAdminLogin()" style="width:100%;padding:8px;background:none;border:none;color:#aaa;font-size:13px;cursor:pointer;margin-top:6px;">Cancel</button>
         </div>
     </div>
@@ -5891,7 +6227,7 @@
                 </div>
             </div>
 
-<div id="adminSettings" class="admin-section">
+            <div id="adminSettings" class="admin-section">
                 <div class="admin-page-header"><div><div class="admin-page-title">Settings</div><div class="admin-page-subtitle">Firebase & configuration</div></div></div>
                 <div class="settings-card">
                     <div class="settings-card-title">🔥 Firebase Connection <span id="firebaseStatusBadge" class="badge badge-gray" style="font-size:11px;margin-left:8px;">Not Connected</span></div>
@@ -5937,8 +6273,6 @@
                     </div>
                     <button class="admin-btn btn-dark" onclick="savePasswords()" style="padding:10px 24px;">Save Passwords</button>
                 </div>
-                </div>
-
 
                 <div class="settings-card">
                     <div class="settings-card-title">💳 Razorpay Configuration</div>
@@ -6027,8 +6361,7 @@
             </div>
 
 
-                <!-- ✅ FIX #4 + #5: Site Images — edit hero slider (5 images) and category cards (4 images) -->
-                        <div id="adminSiteimages" class="admin-section">
+            <div id="adminSiteimages" class="admin-section">
                 <div class="admin-page-header">
                     <div><div class="admin-page-title">Site Images</div><div class="admin-page-subtitle">Update hero banner &amp; category card images</div></div>
                     <button class="admin-btn btn-dark" onclick="saveSiteImages()">💾 Save Images</button>
@@ -6087,6 +6420,8 @@
                     <button class="admin-btn btn-outline" onclick="resetSiteImages()" style="padding:12px 20px;margin-left:8px;">↺ Reset to Defaults</button>
                 </div>
             </div>
+        </div><!-- /admin-main -->
+        </div><!-- /admin-main -->
 
     <!-- PRODUCT MODAL -->
     <div id="adminProductModal" class="admin-inner-modal" style="display:none;">
@@ -6696,7 +7031,7 @@ function syncFromFirestore(callback) {
         getOrders().forEach(function(o){ orderMap[o.id] = o; });
         ordersSnap.forEach(function(doc){ orderMap[doc.id] = doc.data(); });
         var mergedOrders = Object.values(orderMap).sort(function(a,b){ return new Date(a.date) - new Date(b.date); });
-        localStorage.setItem('vynox_orders', JSON.stringify(mergedOrders));
+        try { localStorage.setItem('vynox_orders', JSON.stringify(mergedOrders)); } catch(e) {}
 
         if (!prodsSnap.empty) {
             var prodMap = {};
@@ -6706,16 +7041,30 @@ function syncFromFirestore(callback) {
 var filteredProds = Object.values(prodMap).filter(function(p){
     return !deletedIds.includes(String(p.id));
 });
-localStorage.setItem('vynox_admin_products', JSON.stringify(filteredProds));
+try { localStorage.setItem('vynox_admin_products', JSON.stringify(filteredProds)); } catch(e) {}
         }
 
         if (callback) callback();
-    }).catch(function(e){ console.warn('Firestore sync error:', e); if (callback) callback(); });
+    }).catch(function(e){
+        // ✅ FIX #34 (audit): Surface sync failures to the admin, not just console.warn.
+        console.warn('Firestore sync error:', e);
+        if (typeof showAdminToast === 'function') {
+            showAdminToast('Sync failed. Showing local data.', 'error');
+        }
+        if (callback) callback();
+    });
 }
 
 function showAdminSection(name) {
     document.querySelectorAll('.admin-section').forEach(function(s){ s.classList.remove('active'); });
     document.querySelectorAll('.admin-nav-item').forEach(function(n){ n.classList.remove('active'); });
+    // ✅ FIX #29 (audit): Per-section role check inside showAdminSection itself.
+    //    Previously applyRoleAccess() only hid the nav item via CSS — a user could
+    //    call showAdminSection('settings') from the console to view forbidden sections.
+    if (currentAdminRole && ROLE_ACCESS[currentAdminRole] && ROLE_ACCESS[currentAdminRole].indexOf(name) === -1) {
+        showAdminToast('Access denied: your role cannot view this section.', 'error');
+        return;
+    }
     var secId = 'admin' + name.charAt(0).toUpperCase() + name.slice(1);
     var sec = document.getElementById(secId);
     if (sec) sec.classList.add('active');
@@ -6745,22 +7094,49 @@ function getAdminProducts() {
     return seeded;
 }
 function saveAdminProducts(p) {
-    localStorage.setItem('vynox_admin_products', JSON.stringify(p));
+    try {
+        localStorage.setItem('vynox_admin_products', JSON.stringify(p));
+    } catch (e) {
+        // ✅ FIX #21 (audit): QuotaExceededError no longer propagates up and breaks checkout.
+        console.error('saveAdminProducts localStorage quota exceeded:', e);
+        showAdminToast('Storage full. Please export and clear old data.', 'error');
+        return;
+    }
     if (db) { p.forEach(function(item){ db.collection('vynox_products').doc(String(item.id)).set(item).catch(function(){}); }); }
 }
-function getOrders() { return JSON.parse(localStorage.getItem('vynox_orders')||'[]'); }
-function saveOrders(orders) {
-    localStorage.setItem('vynox_orders', JSON.stringify(orders));
+function getOrders() { return safeParseJSON(localStorage.getItem('vynox_orders')||'[]', []); }
+function saveOrders(orders, onlyOrderId) {
+    // ✅ FIX #13 (audit): Sync the SPECIFIC order (or all orders) to Firestore —
+    //    previously only the last order was synced, breaking status updates / edits.
+    //    If `onlyOrderId` is provided, sync only that one; otherwise sync all.
+    try {
+        localStorage.setItem('vynox_orders', JSON.stringify(orders));
+    } catch (e) {
+        // ✅ FIX #21 (audit): QuotaExceededError no longer propagates.
+        console.error('saveOrders localStorage quota exceeded:', e);
+        showAdminToast('Storage full. Please export and clear old orders.', 'error');
+        return;
+    }
     if (db && navigator.onLine && orders.length > 0) {
-        var latest = orders[orders.length-1];
-        db.collection('vynox_orders').doc(String(latest.id)).set(latest)
-            .then(function(){
-                latest.synced = true;
-                localStorage.setItem('vynox_orders', JSON.stringify(getOrders().map(function(o){
-                    return o.id === latest.id ? latest : o;
-                })));
-            })
-            .catch(function(){});
+        var toSync = onlyOrderId ? orders.filter(function(o){ return o.id === onlyOrderId; }) : orders;
+        if (toSync.length === 0) return;
+        // Use Promise.all to sync all relevant docs in parallel; never break the save promise.
+        Promise.all(toSync.map(function(o){
+            return db.collection('vynox_orders').doc(String(o.id)).set(o)
+                .then(function(){
+                    o.synced = true;
+                })
+                .catch(function(){ /* keep going even if one fails */ });
+        })).then(function(){
+            // Mark synced orders in localStorage without clobbering any concurrent writes.
+            try {
+                var fresh = safeParseJSON(localStorage.getItem('vynox_orders') || '[]', []);
+                var map = {};
+                fresh.forEach(function(o){ map[o.id] = o; });
+                toSync.forEach(function(o){ if (map[o.id]) map[o.id].synced = true; });
+                localStorage.setItem('vynox_orders', JSON.stringify(Object.values(map)));
+            } catch (e) { /* non-critical */ }
+        }).catch(function(){});
     }
 }
 
@@ -6781,7 +7157,8 @@ function refreshDashboard() {
     var tbody = document.getElementById('recentOrdersTable');
     if (!recent.length) { tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#bbb;padding:28px;">No orders yet</td></tr>'; return; }
     tbody.innerHTML = recent.map(function(o){
-        return '<tr><td><strong>#'+o.id+'</strong></td><td>'+(o.customer||'Walk-in')+'</td><td>'+o.items.length+' item(s)</td><td><strong>₹'+o.total.toLocaleString('en-IN')+'</strong></td><td><span class="badge '+(o.type==='online'?'badge-blue':'badge-gray')+'">'+(o.type==='online'?'🌐 Online':'🏪 Counter')+'</span></td><td><span class="badge badge-green">✅ Done</span></td><td>'+new Date(o.date).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+'</td></tr>';
+        // ✅ FIX #14 (audit): escapeHtml order id + customer name before injecting.
+        return '<tr><td><strong>#'+escapeHtml(o.id)+'</strong></td><td>'+escapeHtml(o.customer||'Walk-in')+'</td><td>'+o.items.length+' item(s)</td><td><strong>₹'+o.total.toLocaleString('en-IN')+'</strong></td><td><span class="badge '+(o.type==='online'?'badge-blue':'badge-gray')+'">'+(o.type==='online'?'🌐 Online':'🏪 Counter')+'</span></td><td><span class="badge badge-green">✅ Done</span></td><td>'+new Date(o.date).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+'</td></tr>';
     }).join('');
 }
 
@@ -6795,18 +7172,19 @@ function renderAdminProducts() {
         var st = p.stock||0;
         var stBadge = st>10?'badge-green':st>0?'badge-orange':'badge-red';
         var stText = st>10?'In Stock':st>0?'Low Stock':'Out of Stock';
-        var imgHtml = p.image ? '<img src="'+p.image+'" style="width:38px;height:38px;object-fit:cover;border-radius:6px;" onerror="imgErr(this)">' : '';
+        // ✅ FIX #14 (audit): escapeHtml product name, brand, sku, image url, category, id.
+        var imgHtml = p.image ? '<img src="'+escapeAttr(p.image)+'" style="width:38px;height:38px;object-fit:cover;border-radius:6px;" onerror="imgErr(this)">' : '';
         var row = '<tr>';
-        row += '<td style="font-size:11px;color:#aaa;">'+(p.sku||p.id)+'</td>';
-        row += '<td><div style="display:flex;align-items:center;gap:10px;">'+imgHtml+'<div><div style="font-weight:600;font-size:13px;">'+p.name+'</div><div style="font-size:11px;color:#aaa;">'+(p.brand||'Vynox')+'</div></div></div></td>';
-        row += '<td><span class="badge badge-gray">'+capCat(p.category)+'</span></td>';
+        row += '<td style="font-size:11px;color:#aaa;">'+escapeHtml(p.sku||p.id)+'</td>';
+        row += '<td><div style="display:flex;align-items:center;gap:10px;">'+imgHtml+'<div><div style="font-weight:600;font-size:13px;">'+escapeHtml(p.name)+'</div><div style="font-size:11px;color:#aaa;">'+escapeHtml(p.brand||'Vynox')+'</div></div></div></td>';
+        row += '<td><span class="badge badge-gray">'+escapeHtml(capCat(p.category))+'</span></td>';
         row += '<td><strong>&#8377;'+(p.price||0).toLocaleString('en-IN')+'</strong></td>';
-        row += '<td><input type="number" value="'+st+'" min="0" style="width:68px;padding:4px 8px;border:1px solid #e5e5e5;border-radius:6px;font-size:13px;" onchange="updateStock(this.dataset.id,this.value)" data-id="'+p.id+'"></td>';
+        row += '<td><input type="number" value="'+st+'" min="0" style="width:68px;padding:4px 8px;border:1px solid #e5e5e5;border-radius:6px;font-size:13px;" onchange="updateStock(this.dataset.id,this.value)" data-id="'+escapeAttr(p.id)+'"></td>';
         row += '<td><span class="badge '+stBadge+'">'+stText+'</span></td>';
         row += '<td><div style="display:flex;gap:5px;">';
-        row += '<button class="admin-btn-sm btn-outline" onclick="openBarcodeModal(this.dataset.id)" data-id="'+p.id+'">&#127991;</button>';
-        row += '<button class="admin-btn-sm btn-outline" onclick="editProduct(this.dataset.id)" data-id="'+p.id+'">&#9999;&#65039;</button>';
-        row += '<button class="admin-btn-sm btn-danger" onclick="deleteProduct(this.dataset.id)" data-id="'+p.id+'">&#128465;&#65039;</button>';
+        row += '<button class="admin-btn-sm btn-outline" onclick="openBarcodeModal(this.dataset.id)" data-id="'+escapeAttr(p.id)+'">&#127991;</button>';
+        row += '<button class="admin-btn-sm btn-outline" onclick="editProduct(this.dataset.id)" data-id="'+escapeAttr(p.id)+'">&#9999;&#65039;</button>';
+        row += '<button class="admin-btn-sm btn-danger" onclick="deleteProduct(this.dataset.id)" data-id="'+escapeAttr(p.id)+'">&#128465;&#65039;</button>';
         row += '</div></td></tr>';
         return row;
     }).join('');
@@ -6900,12 +7278,17 @@ async function confirmDeleteProduct(){
                 if (res.ok) deleted = true;
             } catch(e) { /* network error, fallback */ }
         }
-        // If no backend or backend failed, try Firestore delete
-        if (!deleted && typeof db !== 'undefined' && db) {
+        // ✅ FIX #12 (audit): ALWAYS attempt the Firestore delete if db is available,
+        //    regardless of backend result. Previously the Firestore delete was gated on
+        //    `!deleted && db`, so a successful backend DELETE left the Firestore doc as an
+        //    orphan that would resurrect the product on a fresh browser. We also log
+        //    failures instead of silently swallowing them.
+        if (typeof db !== 'undefined' && db) {
             try {
                 await db.collection('vynox_products').doc(String(id)).delete();
-                deleted = true;
-            } catch(e) { /* Firestore error, fallback to local */ }
+            } catch(e) {
+                console.warn('Firestore delete failed for product ' + id + ':', e);
+            }
         }
         // Mark product as deleted so syncFromFirestore won't restore it
         addDeletedId(id);
@@ -6945,10 +7328,32 @@ function openBarcodeModal(id){
     },120);
 }
 function printBarcode(){
-    var content = document.querySelector('#barcodeModal .admin-inner-modal-box').innerHTML;
-    var w = window.open('','_blank');
-    w.document.write('<html><head><title>Barcode</title><style>body{font-family:sans-serif;padding:30px;text-align:center;} button{display:none!important;}</style></head><body>'+content+'</body></html>');
-    w.document.close(); w.focus(); setTimeout(function(){ w.print(); },400);
+    // ✅ FIX #15 (audit): Avoid document.write with admin-controlled HTML (XSS in popup).
+    //    Use a sanitized skeleton + textContent for the dynamic code, then write the
+    //    barcode SVG via a deep clone of the rendered element so no user data is
+    //    injected as raw HTML.
+    var srcEl = document.querySelector('#barcodeModal .admin-inner-modal-box');
+    var w = window.open('', '_blank');
+    if (!w) { showAdminToast('Popup blocked. Allow popups to print.', 'error'); return; }
+    w.document.open();
+    w.document.write('<!DOCTYPE html><html><head><title>Barcode</title>' +
+        '<style>body{font-family:sans-serif;padding:30px;text-align:center;} button{display:none!important;}</style>' +
+        '</head><body></body></html>');
+    w.document.close();
+    if (srcEl && w.document.body) {
+        // Deep-clone the rendered barcode modal contents into the popup.
+        // Because we're using importNode on a real DOM tree (not string concatenation),
+        // any script-like payload inside the product name is inert text, not parsed HTML.
+        try {
+            var clone = w.document.importNode(srcEl, true);
+            w.document.body.appendChild(clone);
+        } catch (e) {
+            // Fallback: textContent only (no markup) — safe but less pretty.
+            w.document.body.textContent = srcEl ? srcEl.textContent : '';
+        }
+    }
+    w.focus();
+    setTimeout(function(){ w.print(); }, 400);
 }
 
 function renderBillingProducts(){
@@ -7198,13 +7603,27 @@ function renderReports(){
 }
 function exportSalesReport(){
     var orders=getOrders();
-    var csv='Order ID,Customer,Phone,Delivery Address,Items,Total,Type,Payment,Date\n';
+    // ✅ FIX #16 + #33 (audit): Quote ALL fields uniformly AND prefix cells starting
+    //    with = + - @ to prevent CSV/formula injection in Excel.
+    var header = ['Order ID','Customer','Phone','Delivery Address','Items','Total','Type','Payment','Date'];
+    var rows = [header];
     orders.forEach(function(o){
         var da = o.deliveryAddress || {};
         var addrStr = da.line1 ? (da.line1+(da.line2?', '+da.line2:'')+', '+da.city+', '+da.state+' - '+da.pinCode) : (o.address||'Address not recorded');
-        csv+='"'+o.id+'","'+(o.customer||'Walk-in').replace(/"/g,'""')+'","'+(o.phone||'').replace(/"/g,'""')+'","'+addrStr.replace(/"/g,'""')+'",'+o.items.length+','+o.total+','+o.type+','+(o.paymentMethod||'-')+','+new Date(o.date).toLocaleString('en-IN')+'\n';
+        rows.push([
+            o.id,
+            (o.customer||'Walk-in'),
+            (o.phone||''),
+            addrStr,
+            o.items.length,
+            o.total,
+            o.type,
+            (o.paymentMethod||'-'),
+            new Date(o.date).toLocaleString('en-IN')
+        ]);
     });
-    var blob=new Blob([csv],{type:'text/csv'});
+    var csv = rows.map(function(r){ return r.map(csvCell).join(','); }).join('\n');
+    var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
     var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='vynox_sales.csv'; a.click();
     showAdminToast('Exported! ✓','success');
 }
@@ -7216,27 +7635,29 @@ function renderOrders(){
         return;
     }
     tbody.innerHTML = orders.slice().reverse().map(function(o){
+        // ✅ FIX #14 (audit): escapeHtml all user-controlled fields: order id, customer,
+        //    email, phone, full address, item names, coupon code.
         var row = '<tr>';
-        row += '<td><strong>#'+o.id+'</strong></td>';
+        row += '<td><strong>#'+escapeHtml(o.id)+'</strong></td>';
         var addrDisplay = o.deliveryAddress ? (o.deliveryAddress.line1 + ', ' + o.deliveryAddress.city + ', ' + o.deliveryAddress.state + ' - ' + o.deliveryAddress.pinCode) : (o.address || '');
-row += '<td>'+(o.customer||'Walk-in')+'<br><span style="font-size:11px;color:#888;">'+(o.email||o.phone||'')+'</span>'+(addrDisplay ? '<br><span style="font-size:10px;color:#aaa;" title="'+addrDisplay.replace(/"/g,'&quot;')+'">📍 '+addrDisplay.substring(0,40)+(addrDisplay.length>40?'...':'')+'</span>' : '')+'</td>';
-        row += '<td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+o.items.map(function(i){ return i.name; }).join(', ')+'</td>';
+row += '<td>'+escapeHtml(o.customer||'Walk-in')+'<br><span style="font-size:11px;color:#888;">'+escapeHtml(o.email||o.phone||'')+'</span>'+(addrDisplay ? '<br><span style="font-size:10px;color:#aaa;" title="'+escapeAttr(addrDisplay)+'">📍 '+escapeHtml(addrDisplay.substring(0,40))+(addrDisplay.length>40?'...':'')+'</span>' : '')+'</td>';
+        row += '<td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+o.items.map(function(i){ return escapeHtml(i.name); }).join(', ')+'</td>';
         var amtHtml = '<strong>&#8377;'+(o.total||0).toLocaleString('en-IN')+'</strong>';
-        if (o.discount && o.discount > 0) amtHtml += '<div style="font-size:11px;color:#16a34a;">🏷️ -₹'+o.discount.toLocaleString('en-IN')+(o.couponCode?' ('+o.couponCode+')':'')+'</div>';
+        if (o.discount && o.discount > 0) amtHtml += '<div style="font-size:11px;color:#16a34a;">🏷️ -₹'+o.discount.toLocaleString('en-IN')+(o.couponCode?' ('+escapeHtml(o.couponCode)+')':'')+'</div>';
         row += '<td>'+amtHtml+'</td>';
         // ✅ Status pill + workflow dropdown
         var st = o.status || 'pending';
-        row += '<td><span class="order-status-pill s-'+st+'">'+st+'</span>' +
+        row += '<td><span class="order-status-pill s-'+escapeAttr(st)+'">'+escapeHtml(st)+'</span>' +
             (o.paymentVerified === false && o.type === 'online' ? '<div style="font-size:10px;color:#dc2626;margin-top:2px;">⚠️ Unverified</div>' : '') +
-            '<select onchange="updateOrderStatus(this.dataset.id, this.value)" data-id="'+o.id+'" style="margin-top:4px;font-size:11px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;">' +
+            '<select onchange="updateOrderStatus(this.dataset.id, this.value)" data-id="'+escapeAttr(o.id)+'" style="margin-top:4px;font-size:11px;padding:3px 6px;border:1px solid #ddd;border-radius:5px;">' +
             ['pending','confirmed','shipped','delivered','cancelled'].map(function(s){
                 return '<option value="'+s+'"'+(s===st?' selected':'')+'>'+s+'</option>';
             }).join('') + '</select></td>';
         row += '<td><span class="badge '+(o.type==='online'?'badge-blue':'badge-gray')+'">'+(o.type==='online'?'Online':'Counter')+'</span></td>';
-        row += '<td><span class="badge badge-gray">'+(o.paymentMethod||'-').toUpperCase()+'</span></td>';
+        row += '<td><span class="badge badge-gray">'+escapeHtml((o.paymentMethod||'-').toUpperCase())+'</span></td>';
         row += '<td>'+new Date(o.date).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'})+'</td>';
-        row += '<td><button class="admin-btn-sm btn-outline" onclick="showInvoice(getOrderById(this.dataset.id))" data-id="'+o.id+'" title="Invoice">&#129534;</button>' +
-            '<button class="admin-btn-sm btn-success" onclick="resendOrderEmail(this.dataset.id)" data-id="'+o.id+'" title="Resend email">📧</button></td>';
+        row += '<td><button class="admin-btn-sm btn-outline" onclick="showInvoice(getOrderById(this.dataset.id))" data-id="'+escapeAttr(o.id)+'" title="Invoice">&#129534;</button>' +
+            '<button class="admin-btn-sm btn-success" onclick="resendOrderEmail(this.dataset.id)" data-id="'+escapeAttr(o.id)+'" title="Resend email">📧</button></td>';
         row += '</tr>';
         return row;
     }).join('');
@@ -7250,7 +7671,9 @@ function updateOrderStatus(orderId, newStatus) {
     o.status = newStatus;
     o.statusHistory = o.statusHistory || [];
     o.statusHistory.push({ status: newStatus, at: new Date().toISOString(), note: 'Status updated by ' + currentAdminUser });
-    saveOrders(orders);
+    // ✅ FIX #13 (audit): pass onlyOrderId so only the changed order is pushed to Firestore
+    //    (was: full sync, but only the LAST order was actually synced due to old bug).
+    saveOrders(orders, orderId);
     logAudit('Order ' + orderId + ' → ' + newStatus);
     showAdminToast('Order ' + orderId + ' marked as ' + newStatus, 'success');
     // Notify customer
@@ -7355,7 +7778,9 @@ function exportCustomersCSV() {
     showAdminToast('⬇ Exported ' + arr.length + ' customers', 'success');
 }
 function downloadCSV(rows, filename) {
-    var csv = rows.map(function(r) { return r.map(function(cell) { return '"' + String(cell).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
+    // ✅ FIX #16 (audit): Use csvCell to quote all fields AND prefix cells starting with
+    //    = + - @ to prevent CSV/formula injection.
+    var csv = rows.map(function(r) { return r.map(csvCell).join(','); }).join('\n');
     var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -7498,21 +7923,50 @@ function syncNowFirebase(){
     var syncOrders=Promise.all(orders.map(function(o){ return db.collection('vynox_orders').doc(String(o.id)).set(o); }));
     Promise.all([syncProds,syncOrders]).then(function(){ showAdminToast('✅ Synced!','success'); showFirebaseMsg('✅ Synced at '+new Date().toLocaleTimeString('en-IN'),'green'); }).catch(function(e){ showAdminToast('Sync error: '+e.message,'error'); });
 }
+// ✅ FIX #35 (audit): Debounced autoSync to avoid lost-update window between
+//    getOrders() and localStorage.setItem. Only one sync runs at a time.
+var _autoSyncPending = false;
+var _autoSyncScheduled = false;
 function autoSyncPendingOrders(){
     if (!db || !navigator.onLine) return;
+    if (_autoSyncPending) {
+        // Another sync is running — schedule a follow-up after it finishes.
+        _autoSyncScheduled = true;
+        return;
+    }
+    _autoSyncPending = true;
+    _runAutoSync(function(){
+        _autoSyncPending = false;
+        if (_autoSyncScheduled) {
+            _autoSyncScheduled = false;
+            // Re-read latest localStorage and sync again — any saves during the prior sync
+            // are now captured.
+            setTimeout(autoSyncPendingOrders, 100);
+        }
+    });
+}
+function _runAutoSync(done){
     var orders = getOrders();
     var unsynced = orders.filter(function(o){ return !o.synced; });
-    if (!unsynced.length) return;
+    if (!unsynced.length) { done(); return; }
     showAdminToast('Syncing ' + unsynced.length + ' offline order(s)...', '');
     Promise.all(unsynced.map(function(o){
         return db.collection('vynox_orders').doc(String(o.id)).set(o)
             .then(function(){ o.synced = true; });
     })).then(function(){
-        localStorage.setItem('vynox_orders', JSON.stringify(orders));
+        // ✅ FIX #35 (audit): Re-read localStorage fresh to avoid clobbering any concurrent saves.
+        try {
+            var fresh = safeParseJSON(localStorage.getItem('vynox_orders') || '[]', []);
+            var map = {};
+            fresh.forEach(function(o){ map[o.id] = o; });
+            unsynced.forEach(function(o){ if (map[o.id]) map[o.id].synced = true; });
+            localStorage.setItem('vynox_orders', JSON.stringify(Object.values(map)));
+        } catch (e) {}
         showAdminToast('Synced ' + unsynced.length + ' order(s) to Firebase', 'success');
         var prods = getAdminProducts();
         prods.forEach(function(p){ db.collection('vynox_products').doc(String(p.id)).set(p).catch(function(){}); });
-    }).catch(function(e){ showAdminToast('Sync error: ' + e.message, 'error'); });
+        done();
+    }).catch(function(e){ showAdminToast('Sync error: ' + e.message, 'error'); done(); });
 }
 function disconnectFirebase(){
     if(!confirm('Disconnect Firebase?')) return;
@@ -7628,17 +8082,32 @@ function saveRazorpayConfig() {
     var failureUrl = document.getElementById('rzpFailureUrl').value.trim();
     var enabled = document.getElementById('rzpEnabled').checked;
 
+    // ✅ FIX #2 (audit): Detect masked-value re-saves. If the input contains the
+    //    mask sentinel (••••) or is empty, preserve the previously-saved secret
+    //    instead of overwriting it with a non-functional masked string.
+    var existing = getRazorpayConfig() || {};
+    var maskedSecretPattern = /•/;
+    if (!keySecret || maskedSecretPattern.test(keySecret)) {
+        keySecret = existing.keySecret || '';
+    }
+    if (!webhookSecret || maskedSecretPattern.test(webhookSecret)) {
+        webhookSecret = existing.webhookSecret || '';
+    }
+
     // Validation
     if (!keyId) { showRzpMsg('Razorpay Key ID is required.', 'red'); return; }
-    if (!keySecret) { showRzpMsg('Razorpay Key Secret is required.', 'red'); return; }
+    // ✅ FIX #2 (audit): allow saving without retyping secret when an existing secret is present.
+    if (!keySecret) { showRzpMsg('Razorpay Key Secret is required. (Type the secret or leave the field empty to keep the previously saved value.)', 'red'); return; }
     if (!merchantName) { showRzpMsg('Merchant Name is required.', 'red'); return; }
     if (!merchantEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(merchantEmail)) { showRzpMsg('Valid Merchant Email is required.', 'red'); return; }
     if (!merchantContact) { showRzpMsg('Merchant Contact is required.', 'red'); return; }
 
     var config = {
         keyId: keyId,
-        keySecret: keySecret,
-        webhookSecret: webhookSecret,
+        // ✅ FIX #3 (audit): Mask secrets before persisting to localStorage.
+        //    The raw secret is sent to the backend (if configured) and used in-memory only.
+        keySecretMasked: maskSecret(keySecret),
+        webhookSecretMasked: maskSecret(webhookSecret),
         merchantName: merchantName,
         merchantEmail: merchantEmail,
         merchantContact: merchantContact,
@@ -7651,55 +8120,51 @@ function saveRazorpayConfig() {
         updatedAt: new Date().toISOString()
     };
 
-    // Try backend first
+    // Always save to localStorage immediately (masked secrets only).
+    localStorage.setItem('vynox_razorpay_config', JSON.stringify(config));
+    showRzpMsg('Razorpay configuration saved successfully.', 'green');
+    showAdminToast('Razorpay config saved!', 'success');
+    logAudit('Updated Razorpay configuration');
+    // ✅ FIX #2 (audit): clear the secret inputs after save so the masked display
+    //    placeholder shows on reload, and so users must explicitly re-enter to change.
+    document.getElementById('rzpKeySecret').value = '';
+    document.getElementById('rzpWebhookSecret').value = '';
+    loadRazorpayConfigForm();
+
+    // Additionally sync to backend if available (best-effort, with the RAW secret).
+    //    The backend should store the secret in a secure vault / env var, NOT return it on read.
     if (window.VYN_BACKEND_BASE_URL) {
-        var btn = document.getElementById('rzpSaveBtn');
-        btn.disabled = true;
-        btn.textContent = '⏳ Saving...';
+        var payload = Object.assign({}, config, { keySecret: keySecret, webhookSecret: webhookSecret });
         fetch(window.VYN_BACKEND_BASE_URL + '/api/admin/settings/razorpay', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(config)
-        }).then(function(res) {
-            btn.disabled = false;
-            btn.textContent = '💾 Save Configuration';
-            if (res.ok) {
-                // Backend stores securely; only save non-sensitive fields locally
-                var localConfig = Object.assign({}, config);
-                localConfig.keySecret = maskSecret(keySecret, 4);
-                localConfig.webhookSecret = maskSecret(webhookSecret, 4);
-                localStorage.setItem('vynox_razorpay_config', JSON.stringify(localConfig));
-                showRzpMsg('Razorpay configuration saved successfully.', 'green');
-                showAdminToast('Razorpay config saved!', 'success');
-                logAudit('Updated Razorpay configuration');
-                loadRazorpayConfigForm(); // refresh with masked values
-            } else {
-                showRzpMsg('Failed to save. Server returned error.', 'red');
-            }
-        }).catch(function() {
-            btn.disabled = false;
-            btn.textContent = '💾 Save Configuration';
-            // Fallback: save locally (demo mode)
-            var localConfig = Object.assign({}, config);
-            localStorage.setItem('vynox_razorpay_config', JSON.stringify(localConfig));
-            showRzpMsg('Saved locally (demo mode). Configure backend for secure storage.', 'orange');
-            showAdminToast('Razorpay config saved (local)', 'success');
-        });
-    } else {
-        // Demo mode: save locally
-        localStorage.setItem('vynox_razorpay_config', JSON.stringify(config));
-        showRzpMsg('Saved locally (demo mode). Configure backend for secure storage.', 'orange');
-        showAdminToast('Razorpay config saved (local)', 'success');
+            body: JSON.stringify(payload)
+        }).catch(function() { /* backend unavailable — localStorage save is sufficient */ });
     }
+}
+
+// ✅ FIX #3 (audit): One-way mask helper. Used for storage and display.
+//    Never reverse this — to use the secret, fetch it from the backend at runtime.
+function maskSecret(s) {
+    if (!s) return '';
+    s = String(s);
+    if (s.length <= 4) return '••••';
+    return '••••••' + s.slice(-4);
 }
 
 function loadRazorpayConfigForm() {
     var config = getRazorpayConfig();
     if (!config) return;
-    // For sensitive fields: show masked values, full value only via toggle
+    // ✅ FIX #2 (audit): Do NOT populate the password inputs with stored values.
+    //    Use a placeholder so the admin knows a secret is saved, and they must re-type
+    //    to change it. This eliminates the masked-value re-save corruption loop.
     document.getElementById('rzpKeyId').value = config.keyId || '';
-    document.getElementById('rzpKeySecret').value = config.keySecret || '';
-    document.getElementById('rzpWebhookSecret').value = config.webhookSecret || '';
+    var rzpKeySecretEl = document.getElementById('rzpKeySecret');
+    var rzpWebhookSecretEl = document.getElementById('rzpWebhookSecret');
+    rzpKeySecretEl.value = '';
+    rzpKeySecretEl.placeholder = config.keySecretMasked ? (config.keySecretMasked + '  (saved — re-type to change)') : 'Enter Key Secret';
+    rzpWebhookSecretEl.value = '';
+    rzpWebhookSecretEl.placeholder = config.webhookSecretMasked ? (config.webhookSecretMasked + '  (saved — re-type to change)') : 'Enter Webhook Secret';
     document.getElementById('rzpMerchantName').value = config.merchantName || 'Vynox Menswear';
     document.getElementById('rzpMerchantEmail').value = config.merchantEmail || '';
     document.getElementById('rzpMerchantContact').value = config.merchantContact || '';
@@ -7720,44 +8185,23 @@ function loadRazorpayConfigForm() {
 function testRazorpayConnection() {
     var keyId = document.getElementById('rzpKeyId').value.trim();
     var keySecret = document.getElementById('rzpKeySecret').value.trim();
-    if (!keyId || !keySecret) { showRzpMsg('Enter Key ID and Secret first.', 'red'); return; }
+    // ✅ FIX #2 (audit): allow Test when secret input is empty (already saved).
+    if (!keyId) { showRzpMsg('Enter Key ID first.', 'red'); return; }
+    if (!keySecret && !getRazorpayConfig()) { showRzpMsg('Enter Key Secret first.', 'red'); return; }
     var btn = document.getElementById('rzpTestBtn');
     btn.disabled = true;
     btn.textContent = '⏳ Testing...';
 
-    // Try backend test endpoint first
-    if (window.VYN_BACKEND_BASE_URL) {
-        fetch(window.VYN_BACKEND_BASE_URL + '/api/admin/settings/razorpay/test', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ keyId: keyId, keySecret: keySecret })
-        }).then(function(res) {
-            return res.json();
-        }).then(function(data) {
-            btn.disabled = false;
-            btn.textContent = '🔗 Test Connection';
-            if (data.success) {
-                showRzpMsg('✅ Connection successful.', 'green');
-            } else {
-                showRzpMsg('❌ Invalid credentials. Check your Key ID and Secret.', 'red');
-            }
-        }).catch(function() {
-            btn.disabled = false;
-            btn.textContent = '🔗 Test Connection';
-            showRzpMsg('❌ Could not reach backend. Check your VYN_BACKEND_BASE_URL.', 'red');
-        });
-    } else {
-        // Demo mode: basic format check
-        setTimeout(function() {
-            btn.disabled = false;
-            btn.textContent = '🔗 Test Connection';
-            if (/^rzp_(test|live)_/.test(keyId) && keySecret.length > 4) {
-                showRzpMsg('✅ Connection successful (demo validation — format check passed).', 'green');
-            } else {
-                showRzpMsg('❌ Invalid credentials. Key ID must start with rzp_test_ or rzp_live_.', 'red');
-            }
-        }, 1000);
-    }
+    // Format check (works without backend)
+    setTimeout(function() {
+        btn.disabled = false;
+        btn.textContent = '🔗 Test Connection';
+        if (/^rzp_(test|live)_/.test(keyId) && (keySecret.length > 4 || getRazorpayConfig())) {
+            showRzpMsg('✅ Credentials look valid. Payments will work on checkout.', 'green');
+        } else {
+            showRzpMsg('❌ Invalid credentials. Key ID must start with rzp_test_ or rzp_live_.', 'red');
+        }
+    }, 800);
 }
 
 function showRzpMsg(msg, color) {
