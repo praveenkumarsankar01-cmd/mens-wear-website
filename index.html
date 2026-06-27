@@ -7053,30 +7053,29 @@ function syncFromFirestore(callback) {
     if (!db) { if (callback) callback(); return; }
     Promise.all([
         db.collection('vynox_orders').get(),
-        db.collection('vynox_products').get()
+        db.collection('settings').doc('products').get()   // ✅ FIXED: read from same doc saveAdminProducts writes to
     ]).then(function(results){
-        var ordersSnap = results[0], prodsSnap = results[1];
+        var ordersSnap = results[0], prodsDoc = results[1];
 
+        // Merge orders
         var orderMap = {};
         getOrders().forEach(function(o){ orderMap[o.id] = o; });
         ordersSnap.forEach(function(doc){ orderMap[doc.id] = doc.data(); });
         var mergedOrders = Object.values(orderMap).sort(function(a,b){ return new Date(a.date) - new Date(b.date); });
         try { localStorage.setItem('vynox_orders', JSON.stringify(mergedOrders)); } catch(e) {}
 
-        if (!prodsSnap.empty) {
-            var prodMap = {};
-            getAdminProducts().forEach(function(p){ prodMap[p.id] = p; });
-            prodsSnap.forEach(function(doc){ prodMap[doc.id] = doc.data(); });
+        // ✅ FIXED: products are stored as a single doc { list: [...] } in settings/products
+        if (prodsDoc.exists && prodsDoc.data().list && prodsDoc.data().list.length) {
+            var firestoreProds = prodsDoc.data().list;
             var deletedIds = getDeletedIds();
-var filteredProds = Object.values(prodMap).filter(function(p){
-    return !deletedIds.includes(String(p.id));
-});
-try { localStorage.setItem('vynox_admin_products', JSON.stringify(filteredProds)); } catch(e) {}
+            var filteredProds = firestoreProds.filter(function(p){
+                return !deletedIds.includes(String(p.id));
+            });
+            try { localStorage.setItem('vynox_admin_products', JSON.stringify(filteredProds)); } catch(e) {}
         }
 
         if (callback) callback();
     }).catch(function(e){
-        // ✅ FIX #34 (audit): Surface sync failures to the admin, not just console.warn.
         console.warn('Firestore sync error:', e);
         if (typeof showAdminToast === 'function') {
             showAdminToast('Sync failed. Showing local data.', 'error');
@@ -7326,7 +7325,9 @@ async function confirmDeleteProduct(){
         //    failures instead of silently swallowing them.
         if (typeof db !== 'undefined' && db) {
             try {
-                await db.collection('vynox_products').doc(String(id)).delete();
+                // ✅ FIXED: delete from settings/products list (single doc)
+                var allProds = getAdminProducts().filter(function(p){ return String(p.id) !== String(id); });
+                await db.collection('settings').doc('products').set({ list: allProds, updatedAt: new Date().toISOString() });
             } catch(e) {
                 console.warn('Firestore delete failed for product ' + id + ':', e);
             }
@@ -7959,7 +7960,7 @@ function syncNowFirebase(){
     if(!db){ showAdminToast('Firebase not connected!','error'); return; }
     showAdminToast('🔄 Syncing...','');
     var prods=getAdminProducts();
-    var syncProds=Promise.all(prods.map(function(p){ return db.collection('vynox_products').doc(String(p.id)).set(p); }));
+    var syncProds=db.collection('settings').doc('products').set({ list: prods, updatedAt: new Date().toISOString() });  // ✅ FIXED: write to settings/products
     var orders=getOrders();
     var syncOrders=Promise.all(orders.map(function(o){ return db.collection('vynox_orders').doc(String(o.id)).set(o); }));
     Promise.all([syncProds,syncOrders]).then(function(){ showAdminToast('✅ Synced!','success'); showFirebaseMsg('✅ Synced at '+new Date().toLocaleTimeString('en-IN'),'green'); }).catch(function(e){ showAdminToast('Sync error: '+e.message,'error'); });
@@ -8005,7 +8006,7 @@ function _runAutoSync(done){
         } catch (e) {}
         showAdminToast('Synced ' + unsynced.length + ' order(s) to Firebase', 'success');
         var prods = getAdminProducts();
-        prods.forEach(function(p){ db.collection('vynox_products').doc(String(p.id)).set(p).catch(function(){}); });
+        db.collection('settings').doc('products').set({ list: prods, updatedAt: new Date().toISOString() }).catch(function(){}); // ✅ FIXED
         done();
     }).catch(function(e){ showAdminToast('Sync error: ' + e.message, 'error'); done(); });
 }
