@@ -3282,32 +3282,35 @@
 
  
         // ✅ SYNC: Use admin-edited products if available, else seed from hardcoded list
+        // ✅ Helper: map an admin product record to the storefront format
+        function mapAdminProduct(p) {
+            return {
+                id: String(p.id),
+                name: p.name || '',
+                brand: p.brand || 'Vynox',
+                description: p.description || '',
+                price: p.price || 0,
+                originalPrice: p.originalPrice || null,
+                discount: p.originalPrice ? Math.round((1 - p.price / p.originalPrice) * 100) : 0,
+                image: p.image || '',
+                images: p.images || [p.image || ''],
+                category: p.category ? (p.category.charAt(0).toUpperCase() + p.category.slice(1)) : 'Formal',
+                stock: p.stock || 0
+            };
+        }
+
         (function syncProductsFromAdmin() {
+            // ── Step 1: Load from localStorage immediately for instant first paint ──
             var saved = localStorage.getItem('vynox_admin_products');
             if (saved) {
                 try {
                     var adminProds = JSON.parse(saved);
                     if (adminProds && adminProds.length) {
-                        // Map admin product fields to storefront format
-                        products = adminProds.map(function(p) {
-                            return {
-                                id: String(p.id),
-                                name: p.name || '',
-                                brand: p.brand || 'Vynox',
-                                description: p.description || '',
-                                price: p.price || 0,
-                                originalPrice: p.originalPrice || null,
-                                discount: p.originalPrice ? Math.round((1 - p.price/p.originalPrice)*100) : 0,
-                                image: p.image || '',
-                                images: p.images || [p.image||''],
-                                category: p.category ? (p.category.charAt(0).toUpperCase() + p.category.slice(1)) : 'Formal',
-                                stock: p.stock || 0
-                            };
-                        });
+                        products = adminProds.map(mapAdminProduct);
                     }
                 } catch(e) { /* fallback to hardcoded */ }
             } else {
-                // Seed admin localStorage from hardcoded list on first run
+                // Seed localStorage from hardcoded list on very first run
                 var seeded = products.map(function(p, i) {
                     return {
                         id: p.id, name: p.name, brand: p.brand, description: p.description,
@@ -3317,6 +3320,33 @@
                     };
                 });
                 localStorage.setItem('vynox_admin_products', JSON.stringify(seeded));
+                // Also push seed to Firestore so other devices pick it up
+                if (db) {
+                    db.collection('settings').doc('products').get().then(function(doc) {
+                        if (!doc.exists) {
+                            db.collection('settings').doc('products').set({ list: seeded, updatedAt: new Date().toISOString() }).catch(function(){});
+                        }
+                    }).catch(function(){});
+                }
+            }
+
+            // ── Step 2: Subscribe to Firestore real-time updates ──
+            // onSnapshot fires immediately with the latest server data AND on every
+            // subsequent change — so any admin price/stock edit on any device or browser
+            // is reflected on ALL phones within seconds without a page refresh.
+            if (db) {
+                db.collection('settings').doc('products').onSnapshot(function(doc) {
+                    if (doc.exists && doc.data().list && doc.data().list.length) {
+                        var firestoreProds = doc.data().list;
+                        // Keep localStorage in sync as a local cache
+                        try { localStorage.setItem('vynox_admin_products', JSON.stringify(firestoreProds)); } catch(e) {}
+                        products = firestoreProds.map(mapAdminProduct);
+                        // Re-render the current view with fresh data
+                        renderProductGrid(currentFilter);
+                    }
+                }, function(err) {
+                    console.warn('Firestore products snapshot error (using cached data):', err);
+                });
             }
         })();
 
@@ -7102,7 +7132,18 @@ function saveAdminProducts(p) {
         showAdminToast('Storage full. Please export and clear old data.', 'error');
         return;
     }
-    if (db) { p.forEach(function(item){ db.collection('vynox_products').doc(String(item.id)).set(item).catch(function(){}); }); }
+    // ✅ CROSS-DEVICE SYNC FIX: Write the entire product list as one Firestore document.
+    //    The storefront's onSnapshot listener on settings/products fires on ALL devices
+    //    within seconds — any price or stock change in the admin panel is immediately
+    //    visible on every phone/browser without a page refresh.
+    if (db) {
+        db.collection('settings').doc('products').set({
+            list: p,
+            updatedAt: new Date().toISOString()
+        }).catch(function(e) {
+            console.warn('Firestore saveAdminProducts failed (local copy preserved):', e);
+        });
+    }
 }
 function getOrders() { return safeParseJSON(localStorage.getItem('vynox_orders')||'[]', []); }
 function saveOrders(orders, onlyOrderId) {
