@@ -2434,6 +2434,7 @@
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 </head>
@@ -5368,26 +5369,16 @@
             document.getElementById('accLoginView').style.display = 'block';
             document.getElementById('accSignUpView').style.display = 'none';
             document.getElementById('accForgotView').style.display = 'none';
-            document.getElementById('accResetView').style.display = 'none';
         }
         function showSignUpView() {
             document.getElementById('accLoginView').style.display = 'none';
             document.getElementById('accSignUpView').style.display = 'block';
             document.getElementById('accForgotView').style.display = 'none';
-            document.getElementById('accResetView').style.display = 'none';
         }
         function showForgotPassword() {
             document.getElementById('accLoginView').style.display = 'none';
             document.getElementById('accSignUpView').style.display = 'none';
             document.getElementById('accForgotView').style.display = 'block';
-            document.getElementById('accResetView').style.display = 'none';
-        }
-        function showResetView(token) {
-            document.getElementById('accLoginView').style.display = 'none';
-            document.getElementById('accSignUpView').style.display = 'none';
-            document.getElementById('accForgotView').style.display = 'none';
-            document.getElementById('accResetView').style.display = 'block';
-            if (token) document.getElementById('accResetToken').value = token;
         }
         function toggleAccPassVisibility() {
             var input = document.getElementById('accPass');
@@ -5420,57 +5411,45 @@
         }
 
         async function accountAuth() {
-            var emailEl = document.getElementById('accEmail');
-            var passEl = document.getElementById('accPass');
-            var email = emailEl.value.trim().toLowerCase();
-            var pass = passEl.value;
+            var emailEl  = document.getElementById('accEmail');
+            var passEl   = document.getElementById('accPass');
+            var email    = emailEl.value.trim().toLowerCase();
+            var pass     = passEl.value;
             var errEmail = document.getElementById('errAccEmail');
-            var errPass = document.getElementById('errAccPass');
+            var errPass  = document.getElementById('errAccPass');
             var loginBtn = document.getElementById('accLoginBtn');
             errEmail.style.display = 'none';
-            errPass.style.display = 'none';
-            if (!email) { errEmail.textContent = 'Please enter your email or phone number.'; errEmail.style.display = 'block'; return; }
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && !/^\d{10}$/.test(email)) { errEmail.textContent = 'Please enter a valid email address.'; errEmail.style.display = 'block'; return; }
-            if (!pass) { errPass.textContent = 'Please enter your password.'; errPass.style.display = 'block'; return; }
-            if (_loginLockedUntil > Date.now()) { var rem = Math.ceil((_loginLockedUntil - Date.now()) / 1000); errPass.textContent = 'Too many attempts. Please wait ' + rem + ' seconds.'; errPass.style.display = 'block'; return; }
-            loginBtn.disabled = true; loginBtn.innerHTML = '<span class="spinner-sm"></span> Logging in...';
+            errPass.style.display  = 'none';
+
+            if (!email) { errEmail.textContent = 'Please enter your email address.'; errEmail.style.display = 'block'; return; }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEmail.textContent = 'Please enter a valid email address.'; errEmail.style.display = 'block'; return; }
+            if (!pass)  { errPass.textContent = 'Please enter your password.'; errPass.style.display = 'block'; return; }
+            if (_loginLockedUntil > Date.now()) {
+                var rem = Math.ceil((_loginLockedUntil - Date.now()) / 1000);
+                errPass.textContent = 'Too many attempts. Wait ' + rem + ' seconds.';
+                errPass.style.display = 'block'; return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<span class="spinner-sm"></span> Logging in...';
+
             try {
-                var r = await apiFetch('/api/auth', { method: 'POST', body: JSON.stringify({ email: email, password: pass }) });
-                if (!r.demo) {
+                var auth = firebase.auth();
+                var cred = await auth.signInWithEmailAndPassword(email, pass);
+                var user = cred.user;
+
+                if (!user.emailVerified) {
+                    await auth.signOut();
+                    errEmail.textContent = 'Please verify your email first. Check your inbox for the verification link.';
+                    errEmail.style.display = 'block';
                     loginBtn.disabled = false; loginBtn.textContent = 'Login';
-                    if (r.ok && r.data && r.data.token) {
-                        var rememberMe = document.getElementById('accRememberMe').checked;
-                        var userName = r.data.name || email;
-                        var sessionData = { name: userName, email: email, token: r.data.token };
-                        if (rememberMe) {
-                            sessionData.expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
-                            localStorage.setItem('vynox_session', JSON.stringify(sessionData));
-                        } else {
-                            sessionStorage.setItem('vynox_session', JSON.stringify(sessionData));
-                            localStorage.removeItem('vynox_session');
-                        }
-                        showToast('Welcome back, ' + userName + '!', 'success');
-                        _resetLoginAttempts(); _unlockLogin(); initAccountSession();
-                        if (typeof _pendingCheckoutReturn !== 'undefined' && _pendingCheckoutReturn) { _pendingCheckoutReturn = false; closeAccountModal(); }
-                        return;
-                    } else {
-                        _bumpLoginAttempts();
-                        if (_loginAttempts >= 5) { _lockLogin(60000); errPass.textContent = 'Too many attempts. Please wait 60 seconds.'; }
-                        // ✅ FIX #19 (audit): Use a single generic message for ALL auth failures
-                        //    to prevent email enumeration (was: different messages for "not found" vs "wrong password").
-                        else { errPass.textContent = 'Incorrect email or password. Please try again.'; }
-                        errPass.style.display = 'block'; return;
-                    }
+                    return;
                 }
-                var users = safeParseJSON(localStorage.getItem('vynox_users') || '[]', []);
-                var user = users.find(function(u){ return u.email === email; });
-                // ✅ FIX #19 (audit): Same generic error for "not found" and "wrong password".
-                if (!user) { _bumpLoginAttempts(); errPass.textContent = 'Incorrect email or password. Please try again.'; errPass.style.display = 'block'; if (_loginAttempts >= 5) { _lockLogin(60000); errPass.textContent = 'Too many attempts. Please wait 60 seconds.'; } return; }
-                // ✅ FIX #28 (audit): INSECURE — demo only, replace with bcrypt on backend.
-                if (user.passHash !== btoa(unescape(encodeURIComponent(pass)))) { _bumpLoginAttempts(); if (_loginAttempts >= 5) { _lockLogin(60000); errPass.textContent = 'Too many attempts. Please wait 60 seconds.'; } else { errPass.textContent = 'Incorrect email or password. Please try again.'; } errPass.style.display = 'block'; return; }
+
                 _resetLoginAttempts(); _unlockLogin();
-                var rememberMe = document.getElementById('accRememberMe').checked;
-                var sessionData = { name: user.name, email: user.email };
+                var rememberMe  = document.getElementById('accRememberMe').checked;
+                var userName    = user.displayName || email;
+                var sessionData = { name: userName, email: user.email, uid: user.uid };
                 if (rememberMe) {
                     sessionData.expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
                     localStorage.setItem('vynox_session', JSON.stringify(sessionData));
@@ -5478,139 +5457,104 @@
                     sessionStorage.setItem('vynox_session', JSON.stringify(sessionData));
                     localStorage.removeItem('vynox_session');
                 }
-                showToast('Welcome back, ' + user.name + '!', 'success');
-                initAccountSession(); trackAnalytics('login', { method: 'email' });
-                if (typeof _pendingCheckoutReturn !== 'undefined' && _pendingCheckoutReturn) { _pendingCheckoutReturn = false; closeAccountModal(); }
-            } finally { loginBtn.disabled = false; loginBtn.textContent = 'Login'; }
+                showToast('Welcome back, ' + userName + '!', 'success');
+                initAccountSession();
+                trackAnalytics('login', { method: 'firebase_email' });
+                if (typeof _pendingCheckoutReturn !== 'undefined' && _pendingCheckoutReturn) {
+                    _pendingCheckoutReturn = false; closeAccountModal();
+                }
+
+            } catch(e) {
+                _bumpLoginAttempts();
+                if (_loginAttempts >= 5) {
+                    _lockLogin(60000);
+                    errPass.textContent = 'Too many attempts. Please wait 60 seconds.';
+                } else {
+                    errPass.textContent = 'Incorrect email or password. Please try again.';
+                }
+                errPass.style.display = 'block';
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            }
         }
 
         async function accountSignUp() {
-            var name = document.getElementById('accName').value.trim();
+            var name  = document.getElementById('accName').value.trim();
             var email = document.getElementById('accSignUpEmail').value.trim().toLowerCase();
             var phone = document.getElementById('accPhone').value.trim();
-            var pass = document.getElementById('accSignUpPass').value;
-            var btn = document.getElementById('accSignUpBtn');
-            if (!name) { showToast('Full name is required', 'error'); return; }
+            var pass  = document.getElementById('accSignUpPass').value;
+            var btn   = document.getElementById('accSignUpBtn');
+
+            if (!name)  { showToast('Full name is required', 'error'); return; }
             if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Valid email is required', 'error'); return; }
             if (!phone || !/^\d{10}$/.test(phone)) { showToast('Valid 10-digit phone number is required', 'error'); return; }
             if (!pass || pass.length < 6) { showToast('Password must be at least 6 characters', 'error'); return; }
-            btn.disabled = true; btn.innerHTML = '<span class="spinner-sm"></span> Creating account...';
-            try {
-                var r = await apiFetch('/api/auth', { method: 'POST', body: JSON.stringify({ name: name, email: email, password: pass, phone: phone }) });
-                if (!r.demo) {
-                    btn.disabled = false; btn.textContent = 'Sign Up';
-                    if (r.ok && r.data && r.data.token) {
-                        // ✅ FIX #18 (audit): backend-signup path now respects Remember Me + expiresAt.
-                        var rememberMe = document.getElementById('accRememberMe') && document.getElementById('accRememberMe').checked;
-                        var sessionData = { name: r.data.name || name, email: email, token: r.data.token };
-                        if (rememberMe) {
-                            sessionData.expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
-                            localStorage.setItem('vynox_session', JSON.stringify(sessionData));
-                        } else {
-                            sessionStorage.setItem('vynox_session', JSON.stringify(sessionData));
-                            localStorage.removeItem('vynox_session');
-                        }
-                        showToast('Account created! Welcome, ' + name + '.', 'success'); initAccountSession();
-                        if (typeof _pendingCheckoutReturn !== 'undefined' && _pendingCheckoutReturn) { _pendingCheckoutReturn = false; closeAccountModal(); }
-                    } else { showToast((r.data && r.data.error) || 'Sign up failed', 'error'); }
-                    return;
-                }
-                var users = safeParseJSON(localStorage.getItem('vynox_users') || '[]', []);
-                if (users.find(function(u){ return u.email === email; })) { showToast('An account with this email already exists', 'error'); return; }
-                // ✅ FIX #28 (audit): INSECURE — demo only, replace with bcrypt on backend.
-                var user = { name: name, email: email, phone: phone, passHash: btoa(unescape(encodeURIComponent(pass))), createdAt: new Date().toISOString() };
-                users.push(user); localStorage.setItem('vynox_users', JSON.stringify(users));
-                // ✅ FIX #18 (audit): demo-signup session now respects Remember Me + expiresAt.
-                var rememberMe2 = document.getElementById('accRememberMe') && document.getElementById('accRememberMe').checked;
-                var sessionData2 = { name: user.name, email: user.email };
-                if (rememberMe2) {
-                    sessionData2.expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
-                    localStorage.setItem('vynox_session', JSON.stringify(sessionData2));
-                } else {
-                    sessionStorage.setItem('vynox_session', JSON.stringify(sessionData2));
-                    localStorage.removeItem('vynox_session');
-                }
-                showToast('Account created! Welcome, ' + name + '.', 'success');
-                initAccountSession(); trackAnalytics('sign_up', { method: 'email' });
-                // ✅ FIX #10 (audit): clear _pendingCheckoutReturn on demo signup so the
-                //    stale flag doesn't trigger an unwanted closeAccountModal() on the
-                //    next unrelated login. If signup happened during checkout, return to checkout now.
-                if (typeof _pendingCheckoutReturn !== 'undefined' && _pendingCheckoutReturn) {
-                    _pendingCheckoutReturn = false;
-                    closeAccountModal();
-                }
-            } finally { btn.disabled = false; btn.textContent = 'Sign Up'; }
-        }
 
-        async function submitNewPassword() {
-            var token = document.getElementById('accResetToken').value.trim();
-            var newPass = document.getElementById('accNewPass').value;
-            var confirmPass = document.getElementById('accConfirmPass').value;
-            var errEl = document.getElementById('errResetPass');
-            var btn = document.getElementById('accResetPassBtn');
-            errEl.style.display = 'none';
-            // ✅ FIX #11 (audit): Validate token presence BEFORE doing anything else.
-            //    Without this, a demo-mode submission with an empty token still shows
-            //    "Password reset successfully!" — security theater.
-            if (!token) {
-                errEl.textContent = 'Invalid reset link. Please request a new one.';
-                errEl.style.display = 'block'; return;
-            }
-            if (!newPass || newPass.length < 8) {
-                errEl.textContent = 'Password must be at least 8 characters.';
-                errEl.style.display = 'block'; return;
-            }
-            if (newPass !== confirmPass) {
-                errEl.textContent = 'Passwords do not match.';
-                errEl.style.display = 'block'; return;
-            }
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-sm"></span> Resetting...';
+            btn.innerHTML = '<span class="spinner-sm"></span> Creating account...';
+
             try {
-                if (window.VYN_BACKEND_BASE_URL) {
-                    var res = await fetch(window.VYN_BACKEND_BASE_URL + '/api/auth/reset-password', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ token: token, password: newPass })
+                var auth = firebase.auth();
+                var cred = await auth.createUserWithEmailAndPassword(email, pass);
+                var user = cred.user;
+
+                // Set display name
+                await user.updateProfile({ displayName: name });
+
+                // Send verification email automatically
+                await user.sendEmailVerification();
+
+                // Save phone + name to Firestore
+                if (typeof db !== 'undefined' && db) {
+                    await db.collection('users').doc(user.uid).set({
+                        name: name,
+                        email: email,
+                        phone: phone,
+                        createdAt: new Date().toISOString()
                     });
-                    var data = await res.json();
-                    if (res.ok && data.ok) {
-                        showToast('Password reset successfully! Please log in.', 'success');
-                        setTimeout(function() { showLoginView(); }, 2500);
-                    } else {
-                        errEl.textContent = data.error || 'This link has expired or is invalid. Please request a new reset link.';
-                        errEl.style.display = 'block';
-                    }
-                } else {
-                    // Demo mode: simulate success ONLY if a token was provided.
-                    //    ✅ FIX #11 (audit): Without a backend, we cannot actually verify the
-                    //    token, but we still require it to be present (checked above).
-                    showToast('Password reset successfully! Please log in.', 'success');
-                    setTimeout(function() { showLoginView(); }, 2500);
                 }
+
+                // Sign out until email is verified
+                await auth.signOut();
+
+                showToast('Account created! Please check your email to verify before logging in.', 'success');
+                trackAnalytics('sign_up', { method: 'firebase_email' });
+                setTimeout(function() { showLoginView(); }, 2500);
+
             } catch(e) {
-                // ✅ FIX #11 (audit): don't claim success on a network error — surface it.
-                errEl.textContent = 'Could not reach the server. Please try again.';
-                errEl.style.display = 'block';
+                if (e.code === 'auth/email-already-in-use') {
+                    showToast('An account with this email already exists. Try logging in.', 'error');
+                } else if (e.code === 'auth/weak-password') {
+                    showToast('Password is too weak. Use at least 6 characters.', 'error');
+                } else {
+                    showToast('Sign up failed: ' + (e.message || 'Please try again.'), 'error');
+                }
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Reset Password';
+                btn.textContent = 'Sign Up';
             }
         }
 
+
         var _resetCooldown = 0;
-        function sendResetLink() {
+        async function sendResetLink() {
             var email = document.getElementById('accForgotEmail').value.trim().toLowerCase();
-            var btn = document.getElementById('accResetBtn');
+            var btn   = document.getElementById('accResetBtn');
             if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Please enter a valid email address', 'error'); return; }
             if (_resetCooldown > Date.now()) return;
-            btn.disabled = true; btn.innerHTML = '<span class="spinner-sm"></span> Sending...';
-            if (window.VYN_BACKEND_BASE_URL) {
-                fetch(window.VYN_BACKEND_BASE_URL + '/api/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) })
-                .then(function() { btn.disabled = false; btn.textContent = 'Send Reset Link'; showToast('If an account exists with this email, a reset link has been sent.', 'success'); startResetCountdown(); })
-                .catch(function() { btn.disabled = false; btn.textContent = 'Send Reset Link'; showToast('If an account exists with this email, a reset link has been sent.', 'success'); startResetCountdown(); });
-            } else {
-                setTimeout(function() { btn.disabled = false; btn.textContent = 'Send Reset Link'; showToast('If an account exists with this email, a reset link has been sent.', 'success'); startResetCountdown(); }, 1000);
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-sm"></span> Sending...';
+            try {
+                // Firebase sends a real password reset email
+                await firebase.auth().sendPasswordResetEmail(email);
+            } catch(e) {
+                // Suppress error — don't reveal if email exists
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send Reset Link';
+                showToast('If an account exists with this email, a reset link has been sent.', 'success');
+                startResetCountdown();
             }
         }
         function startResetCountdown() {
@@ -5624,6 +5568,7 @@
         }
 
         function accountLogout() {
+            firebase.auth().signOut().catch(function(){});
             localStorage.removeItem('vynox_session');
             sessionStorage.removeItem('vynox_session');
             showToast('Signed out', '');
@@ -6728,26 +6673,7 @@
                         <a href="#" onclick="showLoginView(); return false;" style="font-size:13px;color:#111;font-weight:600;text-decoration:none;">← Back to Login</a>
                     </div>
                 </div>
-                <!-- Reset Password View -->
-                <div id="accResetView" style="display:none;">
-                    <div style="text-align:center;margin-bottom:20px;">
-                        <div style="font-size:32px;font-weight:800;letter-spacing:-0.5px;margin-bottom:4px;">Vynox</div>
-                    </div>
-                    <h3 style="font-size:22px;text-align:center;margin-bottom:4px;">Set New Password</h3>
-                    <p style="color:#666;font-size:14px;text-align:center;margin-bottom:20px;">Choose a strong new password for your account.</p>
-                    <input type="hidden" id="accResetToken">
-                    <div style="position:relative;">
-                        <input type="password" id="accNewPass" placeholder="New Password (min 8 chars) *" autocomplete="new-password" style="padding-right:44px;" oninput="checkPasswordStrength(this.value,'newPassBar','newPassLabel')">
-                    </div>
-                    <div class="password-strength" id="newPassBar" style="display:none;"></div>
-                    <div class="password-strength-label" id="newPassLabel" style="display:none;"></div>
-                    <input type="password" id="accConfirmPass" placeholder="Confirm New Password *" autocomplete="new-password">
-                    <div class="acc-field-error" id="errResetPass" style="display:none;color:#dc2626;font-size:12px;margin-bottom:6px;"></div>
-                    <button class="primary" onclick="submitNewPassword()" id="accResetPassBtn">Reset Password</button>
-                    <div style="text-align:center;margin-top:14px;">
-                        <a href="#" onclick="showLoginView(); return false;" style="font-size:13px;color:#111;font-weight:600;text-decoration:none;">Back to Login</a>
-                    </div>
-                </div>
+
             </div>
             <div id="accountDashboardView" style="display:none;">
                 <h3>Hello, <span id="accUserName">there</span>! 👋</h3>
@@ -7053,29 +6979,30 @@ function syncFromFirestore(callback) {
     if (!db) { if (callback) callback(); return; }
     Promise.all([
         db.collection('vynox_orders').get(),
-        db.collection('settings').doc('products').get()   // ✅ FIXED: read from same doc saveAdminProducts writes to
+        db.collection('vynox_products').get()
     ]).then(function(results){
-        var ordersSnap = results[0], prodsDoc = results[1];
+        var ordersSnap = results[0], prodsSnap = results[1];
 
-        // Merge orders
         var orderMap = {};
         getOrders().forEach(function(o){ orderMap[o.id] = o; });
         ordersSnap.forEach(function(doc){ orderMap[doc.id] = doc.data(); });
         var mergedOrders = Object.values(orderMap).sort(function(a,b){ return new Date(a.date) - new Date(b.date); });
         try { localStorage.setItem('vynox_orders', JSON.stringify(mergedOrders)); } catch(e) {}
 
-        // ✅ FIXED: products are stored as a single doc { list: [...] } in settings/products
-        if (prodsDoc.exists && prodsDoc.data().list && prodsDoc.data().list.length) {
-            var firestoreProds = prodsDoc.data().list;
+        if (!prodsSnap.empty) {
+            var prodMap = {};
+            getAdminProducts().forEach(function(p){ prodMap[p.id] = p; });
+            prodsSnap.forEach(function(doc){ prodMap[doc.id] = doc.data(); });
             var deletedIds = getDeletedIds();
-            var filteredProds = firestoreProds.filter(function(p){
-                return !deletedIds.includes(String(p.id));
-            });
-            try { localStorage.setItem('vynox_admin_products', JSON.stringify(filteredProds)); } catch(e) {}
+var filteredProds = Object.values(prodMap).filter(function(p){
+    return !deletedIds.includes(String(p.id));
+});
+try { localStorage.setItem('vynox_admin_products', JSON.stringify(filteredProds)); } catch(e) {}
         }
 
         if (callback) callback();
     }).catch(function(e){
+        // ✅ FIX #34 (audit): Surface sync failures to the admin, not just console.warn.
         console.warn('Firestore sync error:', e);
         if (typeof showAdminToast === 'function') {
             showAdminToast('Sync failed. Showing local data.', 'error');
@@ -7325,9 +7252,7 @@ async function confirmDeleteProduct(){
         //    failures instead of silently swallowing them.
         if (typeof db !== 'undefined' && db) {
             try {
-                // ✅ FIXED: delete from settings/products list (single doc)
-                var allProds = getAdminProducts().filter(function(p){ return String(p.id) !== String(id); });
-                await db.collection('settings').doc('products').set({ list: allProds, updatedAt: new Date().toISOString() });
+                await db.collection('vynox_products').doc(String(id)).delete();
             } catch(e) {
                 console.warn('Firestore delete failed for product ' + id + ':', e);
             }
@@ -7960,7 +7885,7 @@ function syncNowFirebase(){
     if(!db){ showAdminToast('Firebase not connected!','error'); return; }
     showAdminToast('🔄 Syncing...','');
     var prods=getAdminProducts();
-    var syncProds=db.collection('settings').doc('products').set({ list: prods, updatedAt: new Date().toISOString() });  // ✅ FIXED: write to settings/products
+    var syncProds=Promise.all(prods.map(function(p){ return db.collection('vynox_products').doc(String(p.id)).set(p); }));
     var orders=getOrders();
     var syncOrders=Promise.all(orders.map(function(o){ return db.collection('vynox_orders').doc(String(o.id)).set(o); }));
     Promise.all([syncProds,syncOrders]).then(function(){ showAdminToast('✅ Synced!','success'); showFirebaseMsg('✅ Synced at '+new Date().toLocaleTimeString('en-IN'),'green'); }).catch(function(e){ showAdminToast('Sync error: '+e.message,'error'); });
@@ -8006,7 +7931,7 @@ function _runAutoSync(done){
         } catch (e) {}
         showAdminToast('Synced ' + unsynced.length + ' order(s) to Firebase', 'success');
         var prods = getAdminProducts();
-        db.collection('settings').doc('products').set({ list: prods, updatedAt: new Date().toISOString() }).catch(function(){}); // ✅ FIXED
+        prods.forEach(function(p){ db.collection('vynox_products').doc(String(p.id)).set(p).catch(function(){}); });
         done();
     }).catch(function(e){ showAdminToast('Sync error: ' + e.message, 'error'); done(); });
 }
