@@ -4346,50 +4346,8 @@
 
             var rzpConfig = getRazorpayCheckoutConfig();
 
-            // ✅ FIX #6 (audit): Create a Razorpay Order on the BACKEND before opening
-            //    the Razorpay checkout. Razorpay signature verification requires a real
-            //    razorpay_order_id returned by POST /v1/orders — a client-only ID cannot
-            //    be verified. Without this, every paid order would stay paymentVerified:false.
+            // Open Razorpay directly without a backend order_id
             let rzpOrderId = null;
-            if (window.VYN_BACKEND_BASE_URL) {
-                try {
-                    const createRes = await fetch(window.VYN_BACKEND_BASE_URL + '/api/payment/create-order', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            internal_order_id: orderId,
-                            amount: Math.round(ctx.amount * 100), // paise
-                            currency: rzpConfig.currency || 'INR',
-                            customer: { name: name, email: email, contact: phone },
-                            notes: {
-                                order_id: orderId,
-                                customer: name,
-                                phone: phone,
-                                address: fullAddr,
-                                product: ctx.product
-                            }
-                        })
-                    });
-                    if (createRes.ok) {
-                        const createData = await createRes.json();
-                        rzpOrderId = createData.id || createData.razorpay_order_id || null;
-                    } else {
-                        console.warn('Backend create-order failed; proceeding without razorpay_order_id. Signature verification will fail.');
-                        showToast('Payment gateway issue. Please retry or contact support.', 'error');
-                        openCustomerModal();
-                        return;
-                    }
-                } catch (e) {
-                    console.error('Razorpay create-order threw:', e);
-                    showToast('Payment gateway issue. Please retry.', 'error');
-                    openCustomerModal();
-                    return;
-                }
-            } else {
-                // Demo mode — no backend, so no real razorpay_order_id. Verification will
-                // fail, but we let the user complete the demo flow.
-                console.warn('Demo mode: no razorpay_order_id from backend. Signature verification will fail.');
-            }
 
             const options = {
                 key:         rzpConfig.key,
