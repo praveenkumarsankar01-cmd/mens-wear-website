@@ -4464,9 +4464,17 @@
                 return;
             }
 
+            // Validate key before opening — catches placeholder/missing keys early
+            if (!rzpConfig.key || rzpConfig.key === 'rzp_test_XXXXXXXXXX' || !/^rzp_(test|live)_/.test(rzpConfig.key)) {
+                showToast('⚠️ Razorpay is not configured. Please add your Key ID in Admin → Settings → Razorpay.', 'error');
+                openCustomerModal();
+                return;
+            }
+
             const rzp = new Razorpay(options);
             rzp.on('payment.failed', function(response) {
-                alert('❌ Payment failed. Please try again.\n' + (response.error && response.error.description ? response.error.description : ''));
+                var msg = (response.error && response.error.description) ? response.error.description : 'Please try again.';
+                showToast('❌ Payment failed: ' + msg, 'error');
                 openCustomerModal(); // re-open so user can retry
             });
             rzp.open();
