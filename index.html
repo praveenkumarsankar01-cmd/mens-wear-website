@@ -5438,14 +5438,6 @@
                 var cred = await auth.signInWithEmailAndPassword(email, pass);
                 var user = cred.user;
 
-                if (!user.emailVerified) {
-                    await auth.signOut();
-                    errEmail.textContent = 'Please verify your email first. Check your inbox for the verification link.';
-                    errEmail.style.display = 'block';
-                    loginBtn.disabled = false; loginBtn.textContent = 'Login';
-                    return;
-                }
-
                 _resetLoginAttempts(); _unlockLogin();
                 var rememberMe  = document.getElementById('accRememberMe').checked;
                 var userName    = user.displayName || email;
@@ -5502,9 +5494,6 @@
                 // Set display name
                 await user.updateProfile({ displayName: name });
 
-                // Send verification email automatically
-                await user.sendEmailVerification();
-
                 // Save phone + name to Firestore
                 if (typeof db !== 'undefined' && db) {
                     await db.collection('users').doc(user.uid).set({
@@ -5515,12 +5504,13 @@
                     });
                 }
 
-                // Sign out until email is verified
-                await auth.signOut();
-
-                showToast('Account created! Please check your email to verify before logging in.', 'success');
+                // Log user in directly after signup
+                var sessionData = { name: name, email: user.email, uid: user.uid };
+                localStorage.setItem('vynox_session', JSON.stringify(sessionData));
+                showToast('Account created! Welcome, ' + name + '!', 'success');
                 trackAnalytics('sign_up', { method: 'firebase_email' });
-                setTimeout(function() { showLoginView(); }, 2500);
+                initAccountSession();
+                setTimeout(function() { closeAccountModal(); }, 1200);
 
             } catch(e) {
                 if (e.code === 'auth/email-already-in-use') {
