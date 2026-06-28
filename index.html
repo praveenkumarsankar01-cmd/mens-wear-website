@@ -315,32 +315,6 @@
     .admin-table { min-width: 600px; }
 }
 
-        /* ✅ Mobile-friendly admin tweaks */
-        @media (max-width: 768px) {
-            .admin-panel { flex-direction: column !important; }
-            .admin-sidebar { width: 100% !important; height: auto !important; position: relative !important; flex-direction: row !important; overflow-x: auto; flex-shrink: 0 !important; min-height: unset !important; }
-            .admin-sidebar-logo { padding: 12px 14px; font-size: 15px; }
-            .admin-content { padding: 12px !important; overflow-y: auto; }
-            .admin-table { font-size: 12px; }
-            .admin-table th, .admin-table td { padding: 6px 8px !important; }
-            /* nav items horizontal on mobile */
-            .admin-nav-item { padding: 10px 14px !important; flex-direction: column; gap: 3px !important; font-size: 10px; border-left: none !important; border-bottom: 3px solid transparent; min-width: 64px; justify-content: center; }
-            .admin-nav-item.active { border-left-color: transparent !important; border-bottom-color: #fff !important; }
-            .admin-nav-item .nav-icon { font-size: 18px !important; width: auto !important; }
-            .admin-sidebar-footer { display: none; }
-            /* Dashboard stat cards stack */
-            .dashboard-stats { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-            .stat-card { padding: 14px !important; }
-            .stat-number { font-size: 20px !important; }
-            /* Admin modals full-screen on mobile */
-            .admin-modal-overlay { align-items: flex-end; padding: 0; }
-            .admin-modal-box { border-radius: 20px 20px 0 0 !important; max-height: 90vh !important; overflow-y: auto !important; width: 100% !important; max-width: 100% !important; }
-            /* Form grids single column */
-            .admin-form-grid { grid-template-columns: 1fr !important; }
-            /* Reports grid */
-            .reports-grid { grid-template-columns: 1fr !important; }
-        }
-
         * {
             margin: 0;
             padding: 0;
@@ -1849,16 +1823,37 @@
             }
 
             /* ── ADMIN ── */
-            .admin-panel { flex-direction: column !important; }
-            .admin-sidebar { width: 100% !important; height: auto !important; min-height: unset !important; position: relative !important; flex-direction: row !important; overflow-x: auto; flex-shrink: 0 !important; }
-            .admin-content { padding: 12px !important; }
+            .admin-panel { flex-direction: column !important; height: 100dvh !important; overflow: hidden !important; }
+            .admin-sidebar { width: 100% !important; height: auto !important; min-height: unset !important; max-height: 64px !important; position: relative !important; flex-direction: row !important; overflow-x: auto; overflow-y: hidden !important; flex-shrink: 0 !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+            .admin-sidebar::-webkit-scrollbar { display: none; }
+            .admin-sidebar-logo { display: none !important; }
+            .admin-nav { display: flex !important; flex-direction: row !important; padding: 0 !important; align-items: stretch; flex: 1; }
+            .admin-main { padding: 10px !important; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+            .admin-nav-item { padding: 6px 10px !important; flex-direction: column !important; gap: 2px !important; font-size: 8.5px !important; border-left: none !important; border-bottom: 3px solid transparent !important; min-width: 54px; white-space: nowrap; flex-shrink: 0; justify-content: center !important; align-items: center !important; height: 64px; }
+            .admin-nav-item.active { border-left-color: transparent !important; border-bottom-color: #fff !important; background: #141414 !important; color: #fff !important; }
+            .admin-nav-item:hover { background: #141414; }
+            .admin-nav-item .nav-icon { font-size: 18px !important; width: auto !important; display: block; }
+            .admin-nav-item > span:last-child { display: block !important; font-size: 8.5px !important; }
+            .admin-sidebar-footer { display: none !important; }
+            /* Admin stat cards */
+            .admin-stats-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+            .admin-stat-value { font-size: 22px !important; }
+            /* Admin modals slide up from bottom on mobile */
+            .admin-inner-modal { padding: 0 !important; align-items: flex-end !important; }
+            .admin-inner-modal-box { border-radius: 20px 20px 0 0 !important; max-height: 92vh !important; overflow-y: auto !important; width: 100% !important; max-width: 100% !important; padding: 20px 16px 32px !important; }
+            /* Billing on mobile: stack */
+            .billing-layout { grid-template-columns: 1fr !important; height: auto !important; }
+            /* Reports */
+            .reports-grid { grid-template-columns: 1fr !important; }
+            /* Admin page header wrap */
+            .admin-page-header { flex-direction: column !important; align-items: flex-start !important; }
+            .admin-page-title { font-size: 18px !important; }
+            /* Admin tables */
             .admin-table { font-size: 11px; }
-            .admin-table th, .admin-table td { padding: 5px 7px !important; }
-            .admin-nav-item { padding: 10px 12px !important; flex-direction: column; gap: 2px !important; font-size: 9px; border-left: none !important; border-bottom: 3px solid transparent; min-width: 58px; }
-            .admin-nav-item.active { border-left-color: transparent !important; border-bottom-color: #fff !important; }
-            .admin-nav-item .nav-icon { font-size: 18px !important; width: auto !important; }
-            .admin-sidebar-footer { display: none; }
-            .dashboard-stats { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+            .admin-table th, .admin-table td { padding: 5px 8px !important; }
+            /* Settings cards */
+            .settings-card { padding: 16px !important; }
+            .admin-form-grid { grid-template-columns: 1fr !important; }
         }
 
         /* ═══════════════════════════════════════
@@ -2471,8 +2466,7 @@
         .role-cashier{background:#dbeafe;color:#1d4ed8;}
         .role-inventory{background:#dcfce7;color:#166534;}
         #cameraReader{width:100%;border-radius:12px;overflow:hidden;background:#000;min-height:260px;}
-        @media(max-width:900px){.billing-layout{grid-template-columns:1fr;height:auto;}.reports-grid{grid-template-columns:1fr;}.admin-form-grid{grid-template-columns:1fr;}.admin-sidebar{width:64px;}.admin-sidebar-logo span,.admin-nav-item>span:last-child,.admin-user-info,.admin-logout-btn{display:none;}.admin-nav-item{justify-content:center;padding:14px 0;}}
-        @media(max-width:768px){.admin-sidebar{width:100% !important;}.admin-nav-item>span:last-child{display:block !important;font-size:9px;}}
+        @media(max-width:900px){.billing-layout{grid-template-columns:1fr;height:auto;}.reports-grid{grid-template-columns:1fr;}.admin-form-grid{grid-template-columns:1fr;}}
         @media print{.admin-sidebar,.admin-modal-header button,.admin-btn-primary,.admin-btn{display:none;}}
 
     </style>
@@ -6007,7 +6001,7 @@
                 <option value="cashier">💳 Cashier</option>
                 <option value="inventory">📦 Inventory Manager</option>
             </select>
-            <button class="admin-btn-primary" onclick="doAdminLogin()">Login</button>
+            <button class="admin-btn-primary" id="adminLoginBtn" onclick="doAdminLogin()">Login</button>
             <!-- ✅ FIX #4 (audit): Default admin passwords are NO LONGER printed in the UI.
                  First-run admins must read the README or environment setup docs to learn the
                  default credentials (admin123 / cash123 / inv123) and should change them
@@ -6253,13 +6247,13 @@
                 </div>
                 <div class="settings-card">
                     <div class="settings-card-title">🔐 Change Passwords</div>
-                    <div class="settings-card-sub">Update login passwords for each role</div>
+                    <div class="settings-card-sub">Passwords sync to Firebase → all devices update instantly. If Firebase is offline, saves locally until reconnected.</div>
                     <div class="admin-form-grid">
-                        <div class="admin-form-group"><label>👑 Owner Password</label><input type="password" class="admin-form-control" id="newOwnerPass" placeholder="New password"></div>
-                        <div class="admin-form-group"><label>💳 Cashier Password</label><input type="password" class="admin-form-control" id="newCashierPass" placeholder="New password"></div>
-                        <div class="admin-form-group"><label>📦 Inventory Password</label><input type="password" class="admin-form-control" id="newInventoryPass" placeholder="New password"></div>
+                        <div class="admin-form-group"><label>👑 Owner Password</label><input type="password" class="admin-form-control" id="newOwnerPass" placeholder="Leave blank to keep current"></div>
+                        <div class="admin-form-group"><label>💳 Cashier Password</label><input type="password" class="admin-form-control" id="newCashierPass" placeholder="Leave blank to keep current"></div>
+                        <div class="admin-form-group"><label>📦 Inventory Password</label><input type="password" class="admin-form-control" id="newInventoryPass" placeholder="Leave blank to keep current"></div>
                     </div>
-                    <button class="admin-btn btn-dark" onclick="savePasswords()" style="padding:10px 24px;">Save Passwords</button>
+                    <button class="admin-btn btn-dark" onclick="savePasswords()" style="padding:10px 24px;">💾 Save & Sync Passwords</button>
                 </div>
 
                 <div class="settings-card">
@@ -6791,9 +6785,40 @@ var html5QrCode = null;
 var cameraRunning = false;
 var firebaseConfigured = !!db;
 
+// ← Change these default passwords here directly in the code
+var HARDCODED_CREDS = { owner: 'admin123', cashier: 'cash123', inventory: 'inv123' };
+
 function getStoredCreds() {
-    var s = localStorage.getItem('vynox_creds');
-    return s ? JSON.parse(s) : {owner:'admin123',cashier:'cash123',inventory:'inv123'};
+    // Priority: localStorage cache (synced from Firebase) → HARDCODED fallback
+    // Firebase is loaded async via loadCredsFromFirebase() on admin panel open
+    try {
+        var s = localStorage.getItem('vynox_creds');
+        if (s) return Object.assign({}, HARDCODED_CREDS, JSON.parse(s));
+    } catch(e) {}
+    return Object.assign({}, HARDCODED_CREDS);
+}
+
+// Load credentials from Firebase and cache to localStorage so all devices stay in sync
+function loadCredsFromFirebase(callback) {
+    if (!firebaseConfigured || !db) {
+        if (callback) callback(getStoredCreds());
+        return;
+    }
+    db.collection('settings').doc('credentials').get().then(function(doc) {
+        if (doc.exists) {
+            var data = doc.data();
+            var creds = { owner: data.owner || HARDCODED_CREDS.owner, cashier: data.cashier || HARDCODED_CREDS.cashier, inventory: data.inventory || HARDCODED_CREDS.inventory };
+            localStorage.setItem('vynox_creds', JSON.stringify(creds)); // cache locally for offline use
+            if (callback) callback(creds);
+        } else {
+            // First time — push hardcoded defaults to Firebase so all devices get them
+            var defaults = getStoredCreds();
+            db.collection('settings').doc('credentials').set(defaults).catch(function(){});
+            if (callback) callback(defaults);
+        }
+    }).catch(function() {
+        if (callback) callback(getStoredCreds()); // Firebase failed → use localStorage/hardcoded
+    });
 }
 
 function openAdminLogin() { document.getElementById('adminLoginModal').style.display='flex'; document.getElementById('adminPasswordInput').focus(); }
@@ -6804,25 +6829,29 @@ function doAdminLogin() {
     var role = document.getElementById('adminRoleSelect').value;
     var name = document.getElementById('adminUsername').value.trim();
     var err = document.getElementById('adminLoginError');
-    var creds = getStoredCreds();
-    if (creds[role] === pass) {
-        currentAdminRole = role;
-        var labels = {owner:'👑 Owner',cashier:'💳 Cashier',inventory:'📦 Inventory'};
-        var roleBadgeClass = {owner:'role-owner',cashier:'role-cashier',inventory:'role-inventory'};
-        currentAdminUser = name || labels[role];
-        document.getElementById('adminUserDisplay').innerHTML = currentAdminUser + ' <span class="role-badge ' + roleBadgeClass[role] + '">' + (role.charAt(0).toUpperCase()+role.slice(1)) + '</span>';
-        closeAdminLogin();
-        document.getElementById('adminPanel').style.display = 'flex';
-        // ✅ FIX #3: Show demo-mode banner if backend is not configured
-        var banner = document.getElementById('adminDemoBanner');
-        if (banner) banner.style.display = (!window.VYN_BACKEND_BASE_URL) ? 'block' : 'none';
-        applyRoleAccess(role);
-        initAdminPanel();
-        loadFirebaseConfig();
-    } else {
-        err.style.display = 'block';
-        setTimeout(function(){ err.style.display='none'; }, 3000);
-    }
+    var btn = document.getElementById('adminLoginBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Checking...'; }
+    // Always try Firebase first to get latest passwords, then fall back to local
+    loadCredsFromFirebase(function(creds) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
+        if (creds[role] === pass) {
+            currentAdminRole = role;
+            var labels = {owner:'👑 Owner',cashier:'💳 Cashier',inventory:'📦 Inventory'};
+            var roleBadgeClass = {owner:'role-owner',cashier:'role-cashier',inventory:'role-inventory'};
+            currentAdminUser = name || labels[role];
+            document.getElementById('adminUserDisplay').innerHTML = currentAdminUser + ' <span class="role-badge ' + roleBadgeClass[role] + '">' + (role.charAt(0).toUpperCase()+role.slice(1)) + '</span>';
+            closeAdminLogin();
+            document.getElementById('adminPanel').style.display = 'flex';
+            var banner = document.getElementById('adminDemoBanner');
+            if (banner) banner.style.display = (!window.VYN_BACKEND_BASE_URL) ? 'block' : 'none';
+            applyRoleAccess(role);
+            initAdminPanel();
+            loadFirebaseConfig();
+        } else {
+            err.style.display = 'block';
+            setTimeout(function(){ err.style.display='none'; }, 3000);
+        }
+    });
 }
 
 function applyRoleAccess(role) {
@@ -7983,18 +8012,29 @@ function resetProducts(){
     showAdminToast('Products reset ✓','success');
 }
 function savePasswords(){
-    var stored=getStoredCreds();
-    var op=document.getElementById('newOwnerPass').value.trim();
-    var cp=document.getElementById('newCashierPass').value.trim();
-    var ip=document.getElementById('newInventoryPass').value.trim();
-    if(op) stored.owner=op;
-    if(cp) stored.cashier=cp;
-    if(ip) stored.inventory=ip;
-    localStorage.setItem('vynox_creds',JSON.stringify(stored));
-    document.getElementById('newOwnerPass').value='';
-    document.getElementById('newCashierPass').value='';
-    document.getElementById('newInventoryPass').value='';
-    showAdminToast('Passwords updated! ✅','success');
+    var current = getStoredCreds();
+    var op = document.getElementById('newOwnerPass').value.trim();
+    var cp = document.getElementById('newCashierPass').value.trim();
+    var ip = document.getElementById('newInventoryPass').value.trim();
+    if (!op && !cp && !ip) { showAdminToast('Enter at least one new password','error'); return; }
+    if (op) current.owner = op;
+    if (cp) current.cashier = cp;
+    if (ip) current.inventory = ip;
+    // Always save to localStorage immediately (works offline on this device)
+    localStorage.setItem('vynox_creds', JSON.stringify(current));
+    document.getElementById('newOwnerPass').value = '';
+    document.getElementById('newCashierPass').value = '';
+    document.getElementById('newInventoryPass').value = '';
+    // Also push to Firebase if connected — so ALL devices get the new passwords
+    if (firebaseConfigured && db) {
+        db.collection('settings').doc('credentials').set(current).then(function() {
+            showAdminToast('✅ Passwords saved to Firebase — all devices updated!','success');
+        }).catch(function(e) {
+            showAdminToast('⚠️ Saved locally. Firebase sync failed: ' + e.message,'error');
+        });
+    } else {
+        showAdminToast('⚠️ Saved on this device only (Firebase not connected). Connect Firebase to sync all devices.','success');
+    }
 }
 
 // ✅ FIX #3: Ctrl+Shift+A keyboard shortcut removed — replaced by secret triple-click on logo.
