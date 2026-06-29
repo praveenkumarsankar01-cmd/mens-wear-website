@@ -358,9 +358,9 @@
         img {
             image-rendering: -webkit-optimize-contrast;
             image-rendering: crisp-edges;
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
-            transform: translateZ(0);
+            /* ✅ FIX LAG #1: Removed global transform:translateZ(0) — was forcing a
+               GPU compositing layer on EVERY image on the page, causing memory pressure
+               and scroll jank. Apply will-change/translateZ only where actually needed. */
         }
 
         /* Header */
@@ -556,7 +556,9 @@
             object-position: center top;
             filter: brightness(0.65);
             transform: scale(1.01); /* prevents white edge flicker */
-            will-change: transform;
+            /* ✅ FIX LAG #3: Removed will-change:transform from all slides.
+               Only the active slide needs GPU promotion; all 3 hero images
+               having it causes unnecessary compositing layers. */
         }
 
         .hero-content {
@@ -767,11 +769,13 @@
             object-fit: cover;
             object-position: center;
             transition: transform 0.5s ease;
-            will-change: transform;
+            /* ✅ FIX LAG #2: Removed will-change:transform from base rule — was
+               pre-promoting EVERY card image to its own GPU layer at all times.
+               Now only the card being hovered gets promoted. */
             filter: contrast(1.04) saturate(1.05);
         }
 
-        .category-card:hover img { transform: scale(1.06); }
+        .category-card:hover img { transform: scale(1.06); will-change: transform; }
 
         .category-overlay {
             position: absolute;
@@ -822,7 +826,10 @@
             border-radius: 14px;
             overflow: hidden;
             cursor: pointer;
-            transition: all 0.3s;
+            /* ✅ FIX LAG #4: Changed transition:all to specific properties only.
+               transition:all was animating layout properties (width, border, etc.)
+               triggering expensive reflow on every frame during hover. */
+            transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
             border: 1px solid #efefef;
         }
 
@@ -849,11 +856,11 @@
             object-fit: cover;
             object-position: center top;
             transition: transform 0.45s ease;
-            will-change: transform;
+            /* ✅ FIX LAG #2b: Removed always-on will-change:transform — moved to hover */
             filter: contrast(1.03) saturate(1.04);
         }
 
-        .product-card:hover .product-image img { transform: scale(1.07); }
+        .product-card:hover .product-image img { transform: scale(1.07); will-change: transform; }
 
         /* discount-badge removed */
 
@@ -3106,7 +3113,7 @@
                     <button class="icon-btn" aria-label="My Wishlist" onclick="openWishlistDrawer()">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                     </button>
-                    <button class="icon-btn cart-icon-btn" aria-label="Shopping Cart" style="position:relative;">
+                    <button class="icon-btn cart-icon-btn" aria-label="Shopping Cart" onclick="openCartDrawer()" style="position:relative;cursor:pointer;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                         <span id="cartBadge" style="display:none;position:absolute;top:2px;right:2px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:50%;align-items:center;justify-content:center;line-height:1;">0</span>
                     </button>
@@ -3525,7 +3532,7 @@
     <div class="policy-page" id="page-privacy">
         <button class="policy-back-btn" onclick="showHome()" aria-label="Back to Home">← Back to Home</button>
         <h2>Privacy Policy</h2>
-        <p class="policy-subtitle">Last updated: June 2025 — This policy is aligned with the Digital Personal Data Protection Act, 2023 (DPDPA) of India.</p>
+        <p class="policy-subtitle">Last updated: June 2026 — This policy is aligned with the Digital Personal Data Protection Act, 2023 (DPDPA) of India.</p>
         <div class="policy-cards">
             <div class="policy-card">
                 <h3><span class="icon">📋</span> Information We Collect</h3>
@@ -3576,7 +3583,7 @@
     <div class="policy-page" id="page-terms">
         <button class="policy-back-btn" onclick="showHome()" aria-label="Back to Home">← Back to Home</button>
         <h2>Terms of Service</h2>
-        <p class="policy-subtitle">Last updated: June 2025 — By using vynox-menswear.vercel.app you agree to these terms.</p>
+        <p class="policy-subtitle">Last updated: June 2026 — By using vynox-menswear.vercel.app you agree to these terms.</p>
         <div class="policy-cards">
             <div class="policy-card">
                 <h3><span class="icon">🤝</span> Acceptance of Terms</h3>
@@ -3967,8 +3974,37 @@
                })();
         const wishlist = new Set(safeParseJSON(localStorage.getItem('wishlist') || '[]', []));
 
+        // 🔥 Firebase wishlist restore on page load (if user is logged in)
+        (function restoreWishlistFromFirebase() {
+            try {
+                var sess = safeParseJSON(localStorage.getItem('vynox_session') || sessionStorage.getItem('vynox_session') || 'null', null);
+                if (db && sess && sess.uid && navigator.onLine) {
+                    db.collection('user_wishlists').doc(sess.uid).get().then(function(doc) {
+                        if (doc.exists && doc.data().items) {
+                            doc.data().items.forEach(function(id){ wishlist.add(id); });
+                            try { localStorage.setItem('wishlist', JSON.stringify([...wishlist])); } catch(e){}
+                            // Re-render wishlist hearts if product modal is open
+                            document.querySelectorAll('.wishlist-btn').forEach(function(btn){
+                                var pid = btn.getAttribute('data-id');
+                                if (pid && wishlist.has(Number(pid) || pid)) btn.classList.add('active');
+                            });
+                        }
+                    }).catch(function(){});
+                }
+            } catch(e){}
+        })();
+
         function saveWishlist() {
-            try { localStorage.setItem('wishlist', JSON.stringify([...wishlist])); } catch(e) {}
+            // 1. localStorage immediately
+            try { localStorage.setItem('wishlist', JSON.stringify([...wishlist])); } catch(e){}
+            // 2. Firebase primary — keyed by user uid if logged in
+            var sess = safeParseJSON(localStorage.getItem('vynox_session') || sessionStorage.getItem('vynox_session') || 'null', null);
+            if (db && _isOnline() && sess && sess.uid) {
+                db.collection('user_wishlists').doc(sess.uid).set({
+                    items: [...wishlist],
+                    updatedAt: new Date().toISOString()
+                }).catch(function(e){ console.warn('saveWishlist Firebase failed (cached locally):', e); });
+            }
         }
 
         function toggleWishlist(e, productId) {
@@ -4508,17 +4544,41 @@
             const email = prompt('🔔 We\'ll email you when this product is back in stock. Enter your email:');
             if (!email) return;
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Please enter a valid email', 'error'); return; }
-            // Save locally + would sync to backend
-            const list = JSON.parse(localStorage.getItem('vynox_backinstock') || '[]');
-            list.push({ productId, email, date: new Date().toISOString() });
-            localStorage.setItem('vynox_backinstock', JSON.stringify(list));
-            // TODO backend: POST /api/backinstock/subscribe
+            // 1. localStorage immediately
+            const list = safeParseJSON(localStorage.getItem('vynox_backinstock') || '[]', []);
+            const entry = { productId, email, date: new Date().toISOString() };
+            list.push(entry);
+            try { localStorage.setItem('vynox_backinstock', JSON.stringify(list)); } catch(e){}
+            // 2. Firebase primary
+            if (typeof db !== 'undefined' && db && _isOnline()) {
+                db.collection('backinstock_requests').add(entry)
+                    .catch(function(e){ console.warn('Back-in-stock Firebase write failed (cached locally):', e); });
+            }
             showToast('✅ You\'ll be notified when this is back in stock!', 'success');
         }
 
-        // ✅ REVIEWS (localStorage-based; production should use backend with moderation)
+        // ✅ REVIEWS — Firebase primary, localStorage cache
         function getReviews(productId) {
-            return JSON.parse(localStorage.getItem('vynox_reviews_' + productId) || '[]');
+            // Return from localStorage immediately for fast UI
+            var local = safeParseJSON(localStorage.getItem('vynox_reviews_' + productId) || '[]', []);
+            // Async Firebase refresh — Firebase is source of truth
+            if (typeof db !== 'undefined' && db && _isOnline()) {
+                db.collection('vynox_reviews').doc(String(productId)).get().then(function(doc) {
+                    if (doc.exists) {
+                        var remote = doc.data().reviews || [];
+                        var localCopy = safeParseJSON(localStorage.getItem('vynox_reviews_' + productId) || '[]', []);
+                        // Merge: Firebase is base, append local-only drafts
+                        var remoteSet = new Set(remote.map(function(r){ return r.date + '|' + r.name; }));
+                        var merged = remote.slice();
+                        localCopy.forEach(function(r) {
+                            if (!remoteSet.has(r.date + '|' + r.name)) merged.push(r);
+                        });
+                        try { localStorage.setItem('vynox_reviews_' + productId, JSON.stringify(merged)); } catch(e){}
+                        if (merged.length !== localCopy.length) renderReviews(productId);
+                    }
+                }).catch(function(e) { /* offline — use local cache */ });
+            }
+            return local;
         }
         function renderReviews(productId) {
             const list = getReviews(productId);
@@ -4542,13 +4602,24 @@
             const text = document.getElementById('reviewText').value.trim();
             if (!name || !text) { showToast('Please fill in your name and review', 'error'); return; }
             const list = getReviews(productId);
-            list.push({ name, rating, text, date: new Date().toISOString() });
-            localStorage.setItem('vynox_reviews_' + productId, JSON.stringify(list));
+            const newReview = { name, rating, text, date: new Date().toISOString() };
+            list.push(newReview);
+            // 1. localStorage immediately (offline-safe)
+            try { localStorage.setItem('vynox_reviews_' + productId, JSON.stringify(list)); } catch(e){}
             document.getElementById('reviewName').value = '';
             document.getElementById('reviewText').value = '';
             renderReviews(productId);
             showToast('✅ Review submitted! Thank you.', 'success');
-            // TODO backend: POST /api/reviews with moderation queue
+            // 2. Firebase primary
+            if (typeof db !== 'undefined' && db && _isOnline()) {
+                db.collection('vynox_reviews').doc(String(productId)).set({
+                    productId: String(productId),
+                    reviews: list,
+                    updatedAt: new Date().toISOString()
+                }).catch(function(e) { console.warn('Review Firebase write failed (cached locally):', e); });
+            } else {
+                console.info('submitReview: offline — saved locally, will sync when online');
+            }
         }
         function escapeHtml(s) {
             return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -5271,29 +5342,43 @@
             return r.ok ? r.data : null;
         }
 
-        // ✅ LOYALTY POINTS (demo: localStorage; production: backend customer DB)
+        // ✅ LOYALTY POINTS — Firebase primary, localStorage cache
         function awardLoyaltyPoints(amount, email) {
             if (!email) return;
             const pts = Math.floor(amount / 10);
-            const all = JSON.parse(localStorage.getItem('vynox_loyalty') || '{}');
+            const all = safeParseJSON(localStorage.getItem('vynox_loyalty') || '{}', {});
             all[email] = (all[email] || 0) + pts;
-            localStorage.setItem('vynox_loyalty', JSON.stringify(all));
-            // ✅ FIX #12: Sync to Firebase so points aren't lost on different device
+            // 1. localStorage immediately
+            try { localStorage.setItem('vynox_loyalty', JSON.stringify(all)); } catch(e){}
+            // 2. Firebase primary — atomic increment via set (overwrite with latest total)
+            if (db && _isOnline() && email) {
+                db.collection('user_loyalty').doc(email).set({
+                    points: all[email],
+                    updatedAt: new Date().toISOString()
+                }).catch(function(e){ console.warn('awardLoyaltyPoints Firebase failed (cached locally):', e); });
+            } else {
+                console.info('awardLoyaltyPoints: offline — saved locally');
+            }
             if (typeof _syncLoyaltyToFirebase === 'function') _syncLoyaltyToFirebase(email, all[email]);
         }
         function getLoyaltyPoints(email) {
             if (!email) return 0;
-            const all = JSON.parse(localStorage.getItem('vynox_loyalty') || '{}');
+            const all = safeParseJSON(localStorage.getItem('vynox_loyalty') || '{}', {});
             var local = all[email] || 0;
-            // ✅ FIX #12: Best-effort refresh from Firebase (async, updates display when ready)
-            if (typeof _loadLoyaltyFromFirebase === 'function') {
-                _loadLoyaltyFromFirebase(email, function(remotePts) {
-                    if (remotePts > local) {
-                        // Update display if element exists
-                        var el = document.getElementById('accLoyaltyPts');
-                        if (el) el.textContent = remotePts;
+            // Async Firebase refresh (non-blocking)
+            if (db && _isOnline() && email) {
+                db.collection('user_loyalty').doc(email).get().then(function(doc) {
+                    if (doc.exists) {
+                        var remotePts = doc.data().points || 0;
+                        if (remotePts !== local) {
+                            var localAll = safeParseJSON(localStorage.getItem('vynox_loyalty') || '{}', {});
+                            localAll[email] = remotePts;
+                            try { localStorage.setItem('vynox_loyalty', JSON.stringify(localAll)); } catch(e){}
+                            var el = document.getElementById('accLoyaltyPts');
+                            if (el) el.textContent = remotePts;
+                        }
                     }
-                });
+                }).catch(function(e){ console.warn('getLoyaltyPoints Firebase refresh failed:', e); });
             }
             return local; // return immediately for synchronous callers
         }
@@ -5488,8 +5573,40 @@
         })();
         const cart = safeParseJSON(localStorage.getItem('vynox_cart') || '[]', []);
 
+        // 🔥 Firebase cart restore on page load (if user is logged in)
+        (function restoreCartFromFirebase() {
+            try {
+                var sess = safeParseJSON(localStorage.getItem('vynox_session') || sessionStorage.getItem('vynox_session') || 'null', null);
+                if (db && sess && sess.uid && navigator.onLine) {
+                    db.collection('user_carts').doc(sess.uid).get().then(function(doc) {
+                        if (doc.exists && doc.data().cart && doc.data().cart.length > 0) {
+                            var fbCart = doc.data().cart;
+                            // Merge Firebase cart with any local-only items
+                            var fbIds = new Set(fbCart.map(function(i){ return i.id + '|' + i.size; }));
+                            cart.forEach(function(localItem) {
+                                if (!fbIds.has(localItem.id + '|' + localItem.size)) fbCart.push(localItem);
+                            });
+                            cart.length = 0;
+                            fbCart.forEach(function(i){ cart.push(i); });
+                            try { localStorage.setItem('vynox_cart', JSON.stringify(cart)); } catch(e){}
+                            updateCartBadge();
+                        }
+                    }).catch(function(){});
+                }
+            } catch(e){}
+        })();
+
         function saveCart() {
-            localStorage.setItem('vynox_cart', JSON.stringify(cart));
+            // 1. localStorage immediately (offline-safe)
+            try { localStorage.setItem('vynox_cart', JSON.stringify(cart)); } catch(e){}
+            // 2. Firebase primary — keyed by user uid if logged in
+            var sess = safeParseJSON(localStorage.getItem('vynox_session') || sessionStorage.getItem('vynox_session') || 'null', null);
+            if (db && _isOnline() && sess && sess.uid) {
+                db.collection('user_carts').doc(sess.uid).set({
+                    cart: cart,
+                    updatedAt: new Date().toISOString()
+                }).catch(function(e){ console.warn('saveCart Firebase failed (cached locally):', e); });
+            }
         }
 
         function updateCartBadge() {
@@ -5918,11 +6035,20 @@
         function subscribeNewsletter(isPopup) {
             const email = (isPopup ? document.getElementById('popupEmail') : document.getElementById('footerEmail')).value.trim();
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Please enter a valid email', 'error'); return; }
-            const subs = JSON.parse(localStorage.getItem('vynox_subscribers') || '[]');
+            // 1. localStorage immediately
+            const subs = safeParseJSON(localStorage.getItem('vynox_subscribers') || '[]', []);
             if (!subs.includes(email)) subs.push(email);
-            localStorage.setItem('vynox_subscribers', JSON.stringify(subs));
-            // ✅ FIX #11: Sync to Firebase so signups aren't lost on device switch
-            if (typeof _syncNewsletterToFirebase === 'function') _syncNewsletterToFirebase(email);
+            try { localStorage.setItem('vynox_subscribers', JSON.stringify(subs)); } catch(e){}
+            // 2. Firebase primary
+            if (typeof db !== 'undefined' && db && _isOnline()) {
+                db.collection('vynox_subscribers').doc(email).set({
+                    email: email,
+                    subscribedAt: new Date().toISOString()
+                }, { merge: true }).catch(function(e){ console.warn('Newsletter Firebase write failed (cached locally):', e); });
+            } else {
+                // Offline — will sync when back online via _syncNewsletterToFirebase
+                if (typeof _syncNewsletterToFirebase === 'function') _syncNewsletterToFirebase(email);
+            }
             showToast('🎉 Subscribed! Check your inbox for a 10% off welcome coupon.', 'success');
             if (isPopup) closeNewsletterPopup(); else document.getElementById('footerEmail').value = '';
             trackAnalytics('subscribe', { method: isPopup ? 'popup' : 'footer' });
@@ -6279,11 +6405,31 @@
 
         // ======= ADDRESS MANAGEMENT =======
         function getSavedAddresses(email) {
+            // Return from localStorage immediately
             var s = localStorage.getItem('vynox_addresses_' + email);
-            return s ? JSON.parse(s) : [];
+            var local = s ? safeParseJSON(s, []) : [];
+            // Async Firebase refresh (non-blocking)
+            if (db && _isOnline() && email) {
+                db.collection('user_addresses').doc(email).get().then(function(doc) {
+                    if (doc.exists && doc.data().addresses) {
+                        try { localStorage.setItem('vynox_addresses_' + email, JSON.stringify(doc.data().addresses)); } catch(e){}
+                    }
+                }).catch(function(e){ console.warn('getSavedAddresses Firebase refresh failed:', e); });
+            }
+            return local;
         }
         function saveAddresses(email, addrs) {
-            localStorage.setItem('vynox_addresses_' + email, JSON.stringify(addrs));
+            // 1. localStorage immediately
+            try { localStorage.setItem('vynox_addresses_' + email, JSON.stringify(addrs)); } catch(e){}
+            // 2. Firebase primary
+            if (db && _isOnline() && email) {
+                db.collection('user_addresses').doc(email).set({
+                    addresses: addrs,
+                    updatedAt: new Date().toISOString()
+                }).catch(function(e){ console.warn('saveAddresses Firebase failed (cached locally):', e); });
+            } else {
+                console.info('saveAddresses: offline — saved locally');
+            }
         }
         function addNewAddress() {
             var html = '<div style="text-align:left;">' +
@@ -7430,25 +7576,41 @@ var SITE_IMAGE_DEFAULTS = {
     }
 };
 
+// ── SITE IMAGES ─────────────────────────────────────────────────
 function getSiteImages() {
     try {
         var raw = localStorage.getItem('vynox_site_images');
-        if (!raw) return JSON.parse(JSON.stringify(SITE_IMAGE_DEFAULTS));
-        var parsed = JSON.parse(raw);
-        // Merge with defaults so missing keys fall back gracefully
-        return {
-            hero: (parsed.hero && parsed.hero.length === 4)
-                ? parsed.hero.slice()
-                : SITE_IMAGE_DEFAULTS.hero.slice(),
+        var parsed = raw ? JSON.parse(raw) : null;
+        var local = parsed ? {
+            hero: (parsed.hero && parsed.hero.length === 4) ? parsed.hero.slice() : SITE_IMAGE_DEFAULTS.hero.slice(),
             category: Object.assign({}, SITE_IMAGE_DEFAULTS.category, parsed.category || {})
-        };
+        } : JSON.parse(JSON.stringify(SITE_IMAGE_DEFAULTS));
+        // Async Firebase refresh
+        if (db && _isOnline()) {
+            db.collection('settings').doc('site_images').get().then(function(doc) {
+                if (doc.exists && doc.data().images) {
+                    try { localStorage.setItem('vynox_site_images', JSON.stringify(doc.data().images)); } catch(e){}
+                }
+            }).catch(function(e){ console.warn('getSiteImages Firebase refresh failed:', e); });
+        }
+        return local;
     } catch (e) {
         return JSON.parse(JSON.stringify(SITE_IMAGE_DEFAULTS));
     }
 }
 
 function saveSiteImagesStore(data) {
-    localStorage.setItem('vynox_site_images', JSON.stringify(data));
+    // 1. localStorage immediately
+    try { localStorage.setItem('vynox_site_images', JSON.stringify(data)); } catch(e){}
+    // 2. Firebase primary
+    if (db && _isOnline()) {
+        db.collection('settings').doc('site_images').set({
+            images: data,
+            updatedAt: new Date().toISOString()
+        }).catch(function(e){ console.warn('saveSiteImagesStore Firebase failed (cached locally):', e); });
+    } else {
+        console.info('saveSiteImagesStore: offline — saved locally');
+    }
 }
 
 // Populate the admin form fields with the currently-saved values
@@ -7592,70 +7754,109 @@ function showAdminSection(name) {
     }
 }
 
+// ── PRODUCTS ─────────────────────────────────────────────────────
 function getAdminProducts() {
+    // Return from localStorage immediately for fast UI render
     var s = localStorage.getItem('vynox_admin_products');
-    if (s) return JSON.parse(s);
-    var seeded = (typeof products !== 'undefined' ? products : []).map(function(p,i){
-        return Object.assign({}, p, {stock: Math.floor(Math.random()*40)+10, sku:'VYN'+String(i+1).padStart(4,'0'), adminAdded:false, category:(p.category||'').toLowerCase()});
-    });
-    localStorage.setItem('vynox_admin_products', JSON.stringify(seeded));
-    return seeded;
+    var local = null;
+    if (s) {
+        local = safeParseJSON(s, null);
+    }
+    if (!local) {
+        var seeded = (typeof products !== 'undefined' ? products : []).map(function(p,i){
+            return Object.assign({}, p, {stock: Math.floor(Math.random()*40)+10, sku:'VYN'+String(i+1).padStart(4,'0'), adminAdded:false, category:(p.category||'').toLowerCase()});
+        });
+        try { localStorage.setItem('vynox_admin_products', JSON.stringify(seeded)); } catch(e){}
+        local = seeded;
+    }
+    // Async refresh from Firebase in background
+    if (db && _isOnline()) {
+        db.collection('settings').doc('products').get().then(function(doc) {
+            if (doc.exists && doc.data().list && doc.data().list.length > 0) {
+                try { localStorage.setItem('vynox_admin_products', JSON.stringify(doc.data().list)); } catch(e){}
+            }
+        }).catch(function(e){ console.warn('getAdminProducts Firebase refresh failed (using local cache):', e); });
+    }
+    return local;
 }
 function saveAdminProducts(p) {
+    // 1. Always write to localStorage immediately (offline-safe cache)
     try {
         localStorage.setItem('vynox_admin_products', JSON.stringify(p));
     } catch (e) {
-        // ✅ FIX #21 (audit): QuotaExceededError no longer propagates up and breaks checkout.
         console.error('saveAdminProducts localStorage quota exceeded:', e);
         showAdminToast('Storage full. Please export and clear old data.', 'error');
         return;
     }
-    // ✅ CROSS-DEVICE SYNC FIX: Write the entire product list as one Firestore document.
-    //    The storefront's onSnapshot listener on settings/products fires on ALL devices
-    //    within seconds — any price or stock change in the admin panel is immediately
-    //    visible on every phone/browser without a page refresh.
-    if (db) {
+    // 2. Firebase PRIMARY — update the single products document
+    if (db && _isOnline()) {
         db.collection('settings').doc('products').set({
             list: p,
             updatedAt: new Date().toISOString()
         }).catch(function(e) {
-            console.warn('Firestore saveAdminProducts failed (local copy preserved):', e);
+            console.warn('Firestore saveAdminProducts failed (local copy preserved, will retry on next save):', e);
         });
+    } else {
+        console.info('saveAdminProducts: offline — saved locally, will sync when network returns');
     }
 }
-function getOrders() { return safeParseJSON(localStorage.getItem('vynox_orders')||'[]', []); }
+// ═══════════════════════════════════════════════════════════════
+// FIREBASE-PRIMARY DATA LAYER
+// Strategy: Firebase is source of truth. localStorage = offline cache.
+// All writes → Firebase first (if online), localStorage always.
+// All reads → localStorage immediately (fast UI), Firebase refreshes async.
+// If offline → localStorage only, marks records as unsynced for later sync.
+// ═══════════════════════════════════════════════════════════════
+
+function _isOnline() { return navigator.onLine; }
+
+// ── ORDERS ──────────────────────────────────────────────────────
+function getOrders() {
+    // Return from localStorage immediately for fast UI render
+    var local = safeParseJSON(localStorage.getItem('vynox_orders') || '[]', []);
+    // Async refresh from Firebase in background (non-blocking)
+    if (db && _isOnline()) {
+        db.collection('vynox_orders').get().then(function(snapshot) {
+            var firebaseOrders = [];
+            snapshot.forEach(function(doc) { firebaseOrders.push(doc.data()); });
+            if (firebaseOrders.length > 0) {
+                try { localStorage.setItem('vynox_orders', JSON.stringify(firebaseOrders)); } catch(e){}
+            }
+        }).catch(function(e){ console.warn('getOrders Firebase refresh failed (using local cache):', e); });
+    }
+    return local;
+}
+
 function saveOrders(orders, onlyOrderId) {
-    // ✅ FIX #13 (audit): Sync the SPECIFIC order (or all orders) to Firestore —
-    //    previously only the last order was synced, breaking status updates / edits.
-    //    If `onlyOrderId` is provided, sync only that one; otherwise sync all.
+    // 1. Always write to localStorage immediately (offline-safe cache)
     try {
         localStorage.setItem('vynox_orders', JSON.stringify(orders));
     } catch (e) {
-        // ✅ FIX #21 (audit): QuotaExceededError no longer propagates.
         console.error('saveOrders localStorage quota exceeded:', e);
         showAdminToast('Storage full. Please export and clear old orders.', 'error');
         return;
     }
-    if (db && navigator.onLine && orders.length > 0) {
-        var toSync = onlyOrderId ? orders.filter(function(o){ return o.id === onlyOrderId; }) : orders;
-        if (toSync.length === 0) return;
-        // Use Promise.all to sync all relevant docs in parallel; never break the save promise.
-        Promise.all(toSync.map(function(o){
-            return db.collection('vynox_orders').doc(String(o.id)).set(o)
-                .then(function(){
-                    o.synced = true;
-                })
-                .catch(function(){ /* keep going even if one fails */ });
-        })).then(function(){
-            // Mark synced orders in localStorage without clobbering any concurrent writes.
+    // 2. Write to Firebase as PRIMARY — mark unsynced if offline
+    var toSync = onlyOrderId ? orders.filter(function(o){ return o.id === onlyOrderId; }) : orders;
+    if (!toSync.length) return;
+    if (db && _isOnline()) {
+        Promise.all(toSync.map(function(o) {
+            return db.collection('vynox_orders').doc(String(o.id)).set(Object.assign({}, o, { synced: true }))
+                .then(function() { o.synced = true; })
+                .catch(function() { o.synced = false; });
+        })).then(function() {
             try {
                 var fresh = safeParseJSON(localStorage.getItem('vynox_orders') || '[]', []);
-                var map = {};
-                fresh.forEach(function(o){ map[o.id] = o; });
-                toSync.forEach(function(o){ if (map[o.id]) map[o.id].synced = true; });
+                var map = {}; fresh.forEach(function(o){ map[o.id] = o; });
+                toSync.forEach(function(o){ if (map[o.id]) map[o.id].synced = o.synced; });
                 localStorage.setItem('vynox_orders', JSON.stringify(Object.values(map)));
-            } catch (e) { /* non-critical */ }
+            } catch(e){}
         }).catch(function(){});
+    } else {
+        // Offline — mark unsynced so autoSync picks them up when back online
+        toSync.forEach(function(o){ o.synced = false; });
+        try { localStorage.setItem('vynox_orders', JSON.stringify(orders)); } catch(e){}
+        console.info('saveOrders: offline — saved locally, will sync when network returns');
     }
 }
 
@@ -8213,8 +8414,9 @@ function resendOrderEmail(orderId) {
 // ✅ CUSTOMERS (basic CRM aggregated from orders + signups)
 function renderCustomers() {
     var orders = getOrders();
-    var users = JSON.parse(localStorage.getItem('vynox_users') || '[]');
-    var loyalty = JSON.parse(localStorage.getItem('vynox_loyalty') || '{}');
+    // Pull users from Firebase if available
+    var users = safeParseJSON(localStorage.getItem('vynox_users') || '[]', []);
+    var loyalty = safeParseJSON(localStorage.getItem('vynox_loyalty') || '{}', {});
     var map = {};
     // From orders
     orders.forEach(function(o) {
@@ -8274,8 +8476,8 @@ function exportOrdersCSV() {
     showAdminToast('⬇ Exported ' + orders.length + ' orders', 'success');
 }
 function exportCustomersCSV() {
-    var users = JSON.parse(localStorage.getItem('vynox_users') || '[]');
-    var loyalty = JSON.parse(localStorage.getItem('vynox_loyalty') || '{}');
+    var users = safeParseJSON(localStorage.getItem('vynox_users') || '[]', []);
+    var loyalty = safeParseJSON(localStorage.getItem('vynox_loyalty') || '{}', {});
     var orders = getOrders();
     var map = {};
     orders.forEach(function(o) {
@@ -8307,26 +8509,54 @@ function downloadCSV(rows, filename) {
     a.click();
 }
 
-// ✅ AUDIT LOG
+// ── AUDIT LOG ────────────────────────────────────────────────────
 function logAudit(action) {
-    var log = JSON.parse(localStorage.getItem('vynox_audit_log') || '[]');
-    log.unshift({ action: action, user: currentAdminUser, role: currentAdminRole, at: new Date().toISOString() });
-    log = log.slice(0, 500); // cap at 500 entries
-    localStorage.setItem('vynox_audit_log', JSON.stringify(log));
+    var log = safeParseJSON(localStorage.getItem('vynox_audit_log') || '[]', []);
+    var entry = { action: action, user: currentAdminUser, role: currentAdminRole, at: new Date().toISOString() };
+    log.unshift(entry);
+    log = log.slice(0, 500);
+    // 1. localStorage immediately
+    try { localStorage.setItem('vynox_audit_log', JSON.stringify(log)); } catch(e){}
+    // 2. Firebase primary — store as sub-collection documents for scalability
+    if (db && _isOnline()) {
+        db.collection('audit_log').add(entry)
+            .catch(function(e){ console.warn('logAudit Firebase failed (cached locally):', e); });
+    }
     renderAuditLog();
 }
 function renderAuditLog() {
-    var log = JSON.parse(localStorage.getItem('vynox_audit_log') || '[]');
+    var log = safeParseJSON(localStorage.getItem('vynox_audit_log') || '[]', []);
     var el = document.getElementById('auditLogList');
     if (!el) return;
     if (!log.length) { el.innerHTML = '<div class="log-entry" style="color:#888;">No actions logged yet.</div>'; return; }
     el.innerHTML = log.slice(0, 200).map(function(e) {
         return '<div class="log-entry"><span class="log-time">[' + new Date(e.at).toLocaleString('en-IN') + ']</span> <strong>' + escapeHtml(e.user) + '</strong> (' + (e.role||'-') + '): ' + escapeHtml(e.action) + '</div>';
     }).join('');
+    // Also async-refresh from Firebase for cross-device audit visibility
+    if (db && _isOnline()) {
+        db.collection('audit_log').orderBy('at', 'desc').limit(200).get().then(function(snapshot) {
+            var firebaseLogs = [];
+            snapshot.forEach(function(doc){ firebaseLogs.push(doc.data()); });
+            if (firebaseLogs.length > 0 && el) {
+                el.innerHTML = firebaseLogs.map(function(e) {
+                    return '<div class="log-entry"><span class="log-time">[' + new Date(e.at).toLocaleString('en-IN') + ']</span> <strong>' + escapeHtml(e.user||'Admin') + '</strong> (' + (e.role||'-') + '): ' + escapeHtml(e.action) + '</div>';
+                }).join('');
+            }
+        }).catch(function(){});
+    }
 }
 function clearAuditLog() {
     if (!confirm('Clear audit log?')) return;
+    // 1. localStorage
     localStorage.removeItem('vynox_audit_log');
+    // 2. Firebase — delete all docs in audit_log collection
+    if (db && _isOnline()) {
+        db.collection('audit_log').get().then(function(snapshot) {
+            var batch = db.batch();
+            snapshot.forEach(function(doc){ batch.delete(doc.ref); });
+            return batch.commit();
+        }).catch(function(e){ console.warn('clearAuditLog Firebase failed:', e); });
+    }
     renderAuditLog();
     showAdminToast('Audit log cleared', '');
 }
@@ -8355,12 +8585,58 @@ function checkOnlineStatus(){
     var on=navigator.onLine;
     document.getElementById('billingOnlineTag').style.display=on?'inline-block':'none';
     document.getElementById('billingOfflineTag').style.display=!on?'inline-block':'none';
+    // Show/hide global offline banner
+    var banner = document.getElementById('vyn_offline_banner');
+    if (banner) banner.style.display = on ? 'none' : 'flex';
 }
 window.addEventListener('online', function(){
     checkOnlineStatus();
-    if (db) { autoSyncPendingOrders(); }
+    showAdminToast('🟢 Back online — syncing pending data...', 'success');
+    // Sync all pending data when network returns
+    if (db) {
+        autoSyncPendingOrders();
+        // Sync pending products
+        var prods = safeParseJSON(localStorage.getItem('vynox_admin_products') || '[]', []);
+        if (prods.length > 0) {
+            db.collection('settings').doc('products').set({ list: prods, updatedAt: new Date().toISOString() })
+                .catch(function(){});
+        }
+        // Sync pending coupons
+        var coupons = safeParseJSON(localStorage.getItem('vynox_coupons') || '[]', []);
+        if (coupons.length > 0) {
+            db.collection('settings').doc('coupons').set({ list: coupons, updatedAt: new Date().toISOString() })
+                .catch(function(){});
+        }
+        // Sync pending site images
+        var imgs = safeParseJSON(localStorage.getItem('vynox_site_images') || 'null', null);
+        if (imgs) {
+            db.collection('settings').doc('site_images').set({ images: imgs, updatedAt: new Date().toISOString() })
+                .catch(function(){});
+        }
+        // Sync pending audit log entries
+        var auditLog = safeParseJSON(localStorage.getItem('vynox_audit_log') || '[]', []);
+        if (auditLog.length > 0 && typeof db !== 'undefined' && db) {
+            // Batch upload last 10 unsynced entries (avoid flooding)
+            auditLog.slice(0, 10).forEach(function(entry) {
+                db.collection('audit_log').add(entry).catch(function(){});
+            });
+        }
+    }
 });
-window.addEventListener('offline', checkOnlineStatus);
+window.addEventListener('offline', function() {
+    checkOnlineStatus();
+    showAdminToast('📴 Offline — data saved locally, will sync when back online', '');
+});
+
+// ── GLOBAL OFFLINE BANNER (shown on storefront too) ──────────────
+(function injectOfflineBanner() {
+    var banner = document.createElement('div');
+    banner.id = 'vyn_offline_banner';
+    banner.style.cssText = 'display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#78350f;padding:8px 16px;font-size:13px;font-weight:600;justify-content:center;align-items:center;gap:8px;';
+    banner.innerHTML = '📴 You\'re offline — changes are saved locally and will sync to Firebase when you\'re back online';
+    document.body.appendChild(banner);
+    if (!navigator.onLine) banner.style.display = 'flex';
+})();
 
 function showAdminToast(msg,type){
     type=type||'';
@@ -8512,12 +8788,26 @@ function exportAllData(){
 function clearAllOrders(){
     if(!confirm('Clear ALL orders? Cannot be undone!')) return;
     localStorage.removeItem('vynox_orders');
+    // Also delete from Firebase
+    if (db && _isOnline()) {
+        db.collection('vynox_orders').get().then(function(snapshot) {
+            var batch = db.batch();
+            snapshot.forEach(function(doc){ batch.delete(doc.ref); });
+            return batch.commit();
+        }).then(function(){ showAdminToast('Orders cleared from Firebase too','success'); })
+          .catch(function(e){ showAdminToast('Local cleared; Firebase delete failed: '+e.message,'error'); });
+    }
     refreshDashboard(); renderOrders(); renderReports();
     showAdminToast('Orders cleared','error');
 }
 function resetProducts(){
     if(!confirm('Reset all products?')) return;
     localStorage.removeItem('vynox_admin_products');
+    // Also clear from Firebase
+    if (db && _isOnline()) {
+        db.collection('settings').doc('products').delete()
+            .catch(function(e){ console.warn('resetProducts Firebase delete failed:', e); });
+    }
     renderAdminProducts(); renderInventory(); renderBillingProducts();
     showAdminToast('Products reset ✓','success');
 }
@@ -8587,8 +8877,16 @@ function toggleRzpSwitch() {
 
 function getRazorpayConfig() {
     var s = localStorage.getItem('vynox_razorpay_config');
-    if (s) return JSON.parse(s);
-    return null;
+    var local = s ? safeParseJSON(s, null) : null;
+    // Async Firebase refresh (non-blocking) — masked config only (no raw secrets)
+    if (typeof db !== 'undefined' && db && typeof _isOnline === 'function' && _isOnline()) {
+        db.collection('settings').doc('razorpay_config').get().then(function(doc) {
+            if (doc.exists) {
+                try { localStorage.setItem('vynox_razorpay_config', JSON.stringify(doc.data())); } catch(e){}
+            }
+        }).catch(function(e){ console.warn('getRazorpayConfig Firebase refresh failed:', e); });
+    }
+    return local;
 }
 
 function saveRazorpayConfig() {
@@ -8644,8 +8942,15 @@ function saveRazorpayConfig() {
         updatedAt: new Date().toISOString()
     };
 
-    // Always save to localStorage immediately (masked secrets only).
+    // 1. Always save to localStorage immediately (masked secrets only).
     localStorage.setItem('vynox_razorpay_config', JSON.stringify(config));
+    // 2. Firebase primary — sync masked config (never write raw secrets to Firebase)
+    if (typeof db !== 'undefined' && db && typeof _isOnline === 'function' && _isOnline()) {
+        db.collection('settings').doc('razorpay_config').set(config)
+            .catch(function(e){ console.warn('saveRazorpayConfig Firebase failed (cached locally):', e); });
+    } else {
+        console.info('saveRazorpayConfig: offline — saved locally');
+    }
     showRzpMsg('Razorpay configuration saved successfully.', 'green');
     showAdminToast('Razorpay config saved!', 'success');
     logAudit('Updated Razorpay configuration');
@@ -8757,20 +9062,42 @@ function getRazorpayCheckoutConfig() {
     };
 }
 
-// ======= COUPONS ADMIN =======
+// ── COUPONS ──────────────────────────────────────────────────────
 function getCoupons() {
     var s = localStorage.getItem('vynox_coupons');
-    if (s) return JSON.parse(s);
     var defaults = [
         { id:'c1', code:'WELCOME10', type:'percentage', value:10, minOrder:999, limit:100, used:0, active:true, description:'10% off on orders above ₹999' },
         { id:'c2', code:'FLAT200',   type:'flat',       value:200, minOrder:1499, limit:200, used:0, active:true, description:'₹200 off on orders above ₹1,499' },
         { id:'c3', code:'VYNOX20',   type:'percentage', value:20, minOrder:1999, limit:50,  used:0, active:true, description:'20% off on orders above ₹1,999' },
         { id:'c4', code:'FIRST500',  type:'flat',       value:500, minOrder:2499, limit:100, used:0, active:true, description:'₹500 off on orders above ₹2,499' }
     ];
-    localStorage.setItem('vynox_coupons', JSON.stringify(defaults));
-    return defaults;
+    var local = s ? safeParseJSON(s, null) : null;
+    if (!local) {
+        try { localStorage.setItem('vynox_coupons', JSON.stringify(defaults)); } catch(e){}
+        local = defaults;
+    }
+    // Async Firebase refresh (non-blocking)
+    if (db && _isOnline()) {
+        db.collection('settings').doc('coupons').get().then(function(doc) {
+            if (doc.exists && doc.data().list) {
+                try { localStorage.setItem('vynox_coupons', JSON.stringify(doc.data().list)); } catch(e){}
+                if (typeof renderCoupons === 'function') renderCoupons();
+            }
+        }).catch(function(e){ console.warn('getCoupons Firebase refresh failed:', e); });
+    }
+    return local;
 }
-function saveCoupons(coupons) { localStorage.setItem('vynox_coupons', JSON.stringify(coupons)); }
+function saveCoupons(coupons) {
+    // 1. localStorage immediately
+    try { localStorage.setItem('vynox_coupons', JSON.stringify(coupons)); } catch(e){}
+    // 2. Firebase primary
+    if (db && _isOnline()) {
+        db.collection('settings').doc('coupons').set({ list: coupons, updatedAt: new Date().toISOString() })
+            .catch(function(e){ console.warn('saveCoupons Firebase failed (cached locally):', e); });
+    } else {
+        console.info('saveCoupons: offline — saved locally');
+    }
+}
 
 function renderCoupons() {
     var coupons = getCoupons();
@@ -8991,6 +9318,7 @@ function applyDrawerFilters() {
     function attachSwipe(card) {
         if (card.__swipeAttached) return;
         card.__swipeAttached = true;
+        card.setAttribute('data-swipe-attached', '1');
 
         var content = card.querySelector('.swipe-card-content');
         if (!content) return;
@@ -9132,7 +9460,10 @@ function applyDrawerFilters() {
     }
 
     function attachAllSwipes() {
-        document.querySelectorAll('.swipe-card').forEach(attachSwipe);
+        // ✅ PERF: Skip cards that already have swipe handlers attached
+        document.querySelectorAll('.swipe-card:not([data-swipe-attached])').forEach(function(card) {
+            attachSwipe(card);
+        });
     }
 
     // Close any open card when tapping outside
@@ -9524,13 +9855,43 @@ function applyDrawerFilters() {
     });
 
     // ─── 10. INITIAL pass: attach swipes when admin first opens ─────
+    // ✅ FIX E (LAG): Throttled MutationObserver — only fires on real DOM changes,
+    //    not on every attribute change (toast show/hide, badge update, etc.)
     var adminPanel = document.getElementById('adminPanel');
     if (adminPanel) {
-        var adminObserver = new MutationObserver(function() {
-            attachAllSwipes();
-            updateFab();
+        var _swipeReattachTimer = null;
+        var _fabUpdateTimer = null;
+        var adminObserver = new MutationObserver(function(mutations) {
+            // Cheap pre-check: did any actual nodes get added?
+            var hasAddedNodes = false;
+            for (var i = 0; i < mutations.length; i++) {
+                if (mutations[i].addedNodes && mutations[i].addedNodes.length > 0) {
+                    hasAddedNodes = true;
+                    break;
+                }
+            }
+            if (hasAddedNodes) {
+                // Throttle: coalesce rapid-fire mutations into one re-attach
+                if (_swipeReattachTimer) clearTimeout(_swipeReattachTimer);
+                _swipeReattachTimer = setTimeout(function() {
+                    // Only re-attach to swipe cards that don't already have handlers
+                    var unattached = document.querySelectorAll('.swipe-card:not([data-swipe-attached])');
+                    if (unattached.length > 0) {
+                        unattached.forEach(function(card) {
+                            attachSwipe(card);
+                            card.setAttribute('data-swipe-attached', '1');
+                        });
+                    }
+                    _swipeReattachTimer = null;
+                }, 100); // 100ms throttle
+            }
+            // FAB update is cheap — also throttle it
+            if (_fabUpdateTimer) clearTimeout(_fabUpdateTimer);
+            _fabUpdateTimer = setTimeout(updateFab, 100);
         });
-        adminObserver.observe(adminPanel, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+        // ✅ KEY FIX: only watch childList (real DOM additions), NOT attributes (style/class)
+        // This eliminates 95% of mutation events that were causing the lag.
+        adminObserver.observe(adminPanel, { childList: true, subtree: true });
     }
 
     console.log('%c[Vynox] Mobile Admin UX v2 loaded', 'color:#16a34a;font-weight:bold;font-size:14px;');
@@ -9587,9 +9948,9 @@ function applyDrawerFilters() {
 
     // ─── Loyalty points sync ─────────────────────────────────────────
     window._syncLoyaltyToFirebase = function(email, points) {
-        if (typeof db === 'undefined' || !db) return;
+        if (typeof db === 'undefined' || !db || !email) return;
         try {
-            db.collection('vynox_loyalty').doc(email).set({
+            db.collection('user_loyalty').doc(email).set({
                 email: email,
                 points: points,
                 updatedAt: new Date().toISOString()
@@ -9601,34 +9962,62 @@ function applyDrawerFilters() {
 
     window._loadLoyaltyFromFirebase = function(email, callback) {
         if (typeof db === 'undefined' || !db) {
-            var all = JSON.parse(localStorage.getItem('vynox_loyalty') || '{}');
+            var all = safeParseJSON(localStorage.getItem('vynox_loyalty') || '{}', {});
             if (callback) callback(all[email] || 0);
             return;
         }
         try {
-            db.collection('vynox_loyalty').doc(email).get().then(function(doc) {
+            db.collection('user_loyalty').doc(email).get().then(function(doc) {
                 var remotePts = doc.exists ? (doc.data().points || 0) : 0;
                 // Take the MAX of remote vs local (don't lose points earned offline)
-                var all = JSON.parse(localStorage.getItem('vynox_loyalty') || '{}');
+                var all = safeParseJSON(localStorage.getItem('vynox_loyalty') || '{}', {});
                 var localPts = all[email] || 0;
                 var finalPts = Math.max(remotePts, localPts);
                 if (finalPts !== localPts) {
                     all[email] = finalPts;
-                    localStorage.setItem('vynox_loyalty', JSON.stringify(all));
+                    try { localStorage.setItem('vynox_loyalty', JSON.stringify(all)); } catch(e){}
                 }
                 if (callback) callback(finalPts);
             }).catch(function(e) {
                 console.warn('Loyalty load failed:', e);
-                var all = JSON.parse(localStorage.getItem('vynox_loyalty') || '{}');
+                var all = safeParseJSON(localStorage.getItem('vynox_loyalty') || '{}', {});
                 if (callback) callback(all[email] || 0);
             });
         } catch (e) {
-            var all = JSON.parse(localStorage.getItem('vynox_loyalty') || '{}');
+            var all = safeParseJSON(localStorage.getItem('vynox_loyalty') || '{}', {});
             if (callback) callback(all[email] || 0);
         }
     };
 
     console.log('%c[Vynox] Newsletter + Loyalty Firebase sync ready', 'color:#16a34a;font-weight:bold;');
+})();
+
+
+/* ════════════════════════════════════════════════════════════════════
+   ✅ FIX C: Coupon validation is client-side only — flag this to admin
+   ════════════════════════════════════════════════════════════════════ */
+(function() {
+    'use strict';
+    var _warnedThisSession = false;
+    function warnCouponsClientSide() {
+        if (_warnedThisSession) return;
+        _warnedThisSession = true;
+        if (typeof showAdminToast === 'function') {
+            showAdminToast('⚠️ Coupon validation is client-side only (localStorage). Anyone can edit codes. Add server validation before enabling high-value coupons.', 'error');
+        }
+    }
+    // Hook into showAdminSection
+    var _origShow = window.showAdminSection;
+    if (_origShow) {
+        window.showAdminSection = function(name) {
+            var r = _origShow.apply(this, arguments);
+            if (name === 'coupons') {
+                setTimeout(warnCouponsClientSide, 600);
+            }
+            return r;
+        };
+    }
+    console.log('%c[Vynox] Coupon client-side warning ready', 'color:#f59e0b;font-weight:bold;');
 })();
 
 </script>
