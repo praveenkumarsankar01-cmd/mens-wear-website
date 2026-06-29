@@ -156,7 +156,18 @@
          Secret API or Firebase Admin SDK directly.
          Set VYN_BACKEND_BASE_URL below to your deployed backend URL. -->
     <script>
-      window.VYN_BACKEND_BASE_URL = 'https://vynox-menswear.vercel.app';
+      /* ✅ FIX #9 NOTE: Multiple DOMContentLoaded listeners exist (5 total).
+         They're left as-is because each fires in registration order and they're
+         all idempotent. Consolidating them risks breaking init order dependencies.
+         For new code, use the _onDOMReady(cb) helper below instead. */
+      window._onDOMReady = window._onDOMReady || function(cb) {
+          if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', cb);
+          } else {
+              setTimeout(cb, 0);
+          }
+      };
+      window.VYN_BACKEND_BASE_URL = '';  // ✅ Empty = demo mode (localStorage only). Set to your REAL backend URL (e.g. https://api.vynox.in) when backend functions are deployed.
       // ✅ FIX #5 (audit): Use TEST key in source. Backend should serve the LIVE key via
       //    GET /api/config/razorpay-public-key at runtime so the live key never ships
       //    in client source. Override at runtime with window.VYN_PUBLIC_RAZORPAY_KEY.
@@ -274,6 +285,18 @@
         .account-modal h3, .track-modal h3, .newsletter-modal h3 { font-size: 22px; margin-bottom: 8px; }
         .account-modal input, .track-modal input, .newsletter-modal input { width: 100%; padding: 12px 14px; border: 1px solid #e5e5e5; border-radius: 8px; margin-bottom: 10px; font-size: 14px; }
         .account-modal button.primary, .track-modal button.primary, .newsletter-modal button.primary { width: 100%; padding: 12px; background: #111; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        /* ✅ FIX #10: Size guide modal — proper class (was sharing track-modal) */
+        .size-guide-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99996; display: none; align-items: center; justify-content: center; padding: 16px; }
+        .size-guide-modal.open { display: flex; }
+        .size-guide-modal .modal-box { background: #fff; border-radius: 16px; padding: 28px; max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; }
+        .size-guide-modal h3 { font-size: 22px; margin-bottom: 8px; }
+        /* ✅ FIX #8: Hide per-page label entirely when .filter-bar is hidden on mobile */
+        @media (max-width: 768px) {
+            .filter-bar label[for="perPageSelect"],
+            .filter-bar label:has(#perPageSelect) { display: none !important; }
+            /* Also hide the inline mobile sort-select-inline's parent if per-page is hidden */
+            .filter-toggle-bar .sort-select-inline { max-width: 50vw; }
+        }
         .loyalty-pill { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 
         /* ✅ Pagination */
@@ -2955,8 +2978,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
-    <a href="#main-content" style="position:absolute;left:-9999px;top:0;z-index:9999;padding:8px 16px;background:#000;color:#fff;border-radius:0 0 8px 0;" onfocus="this.style.left='0'">Skip to main content</a>
-
     <!-- ===== CUSTOMER ORDER FORM MODAL ===== -->
     <div id="orderFormOverlay" onclick="handleCustomerModalBgClick(event)">
         <div id="orderFormBox">
@@ -3801,7 +3822,64 @@
     { id: '45', name: 'Mirror Work Sherwani',           brand: 'W for Man',      description: 'Kutch mirror-embroidered festive sherwani',                 price: 8499,  originalPrice: 10499, discount: 19, image: 'https://images.unsplash.com/photo-1521119989659-a83eee488004?w=800&q=90', category: 'Ethnic' },
     { id: '46', name: 'Kurta Dhoti Set',                brand: 'Fabindia',       description: 'Ethnic dhoti kurta set for puja and festivals',             price: 2499,  originalPrice: 3199,  discount: 22, image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=90', category: 'Ethnic' },
     { id: '47', name: 'Velvet Nawabi Kurta',            brand: 'Manyavar',       description: 'Rich velvet kurta with thread embroidery',                  price: 4999,  originalPrice: 6299,  discount: 21, image: 'https://images.unsplash.com/photo-1520975954732-35dd22299614?w=800&q=90', category: 'Ethnic' },
-    { id: '48', name: 'Fusion Print Kurta',             brand: 'W for Man',      description: 'Contemporary digital-print kurta with mandarin collar',      price: 2299,  originalPrice: 2999,  discount: 23, image: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800&q=90', category: 'Ethnic' }
+    { id: '48', name: 'Fusion Print Kurta',             brand: 'W for Man',      description: 'Contemporary digital-print kurta with mandarin collar',      price: 2299,  originalPrice: 2999,  discount: 23, image: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800&q=90', category: 'Ethnic' },
+
+    // ===== ✅ FIX #7: Additional 48 products (IDs 49-96) to bring total to 96 =====
+    { id: '49', name: 'Charcoal Grey Formal Suit',      brand: 'Raymond',        description: 'Slim-fit charcoal suit for evening events',                  price: 13999, originalPrice: 16999, discount: 18, image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&q=90', category: 'Formal' },
+    { id: '50', name: 'Oxford Button-Down Shirt',       brand: 'Arrow',          description: 'Classic Oxford cotton button-down in sky blue',              price: 1799,  originalPrice: 2299,  discount: 22, image: 'https://images.unsplash.com/photo-1603252109303-2751441dd157?w=800&q=90', category: 'Formal' },
+    { id: '51', name: 'Peak Lapel Tuxedo',              brand: 'Blackberrys',    description: 'Black peak-lapel tuxedo for black-tie events',               price: 18999, originalPrice: 22999, discount: 17, image: 'https://images.unsplash.com/photo-1593032465171-8bd3d007f0ce?w=800&q=90', category: 'Formal' },
+    { id: '52', name: 'Pinstripe Formal Trousers',      brand: 'Louis Philippe', description: 'Charcoal pinstripe trousers with flat front',                 price: 2499,  originalPrice: 3199,  discount: 22, image: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800&q=90', category: 'Formal' },
+    { id: '53', name: 'Twill Formal Shirt',             brand: 'Peter England',  description: 'Midnight blue twill weave formal shirt',                      price: 1599,  originalPrice: 1999,  discount: 20, image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&q=90', category: 'Formal' },
+    { id: '54', name: 'Double-Breasted Blazer',         brand: 'Raymond',        description: 'Navy double-breasted blazer with gold buttons',               price: 9999,  originalPrice: 12999, discount: 23, image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&q=90', category: 'Formal' },
+    { id: '55', name: 'Solid Formal Chinos',            brand: 'Allen Solly',    description: 'Beige stretch chinos for office wear',                        price: 1499,  originalPrice: 1999,  discount: 25, image: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800&q=90', category: 'Formal' },
+    { id: '56', name: 'Crisp White Formal Shirt',       brand: 'Van Heusen',     description: 'Non-iron white formal shirt with spread collar',              price: 1299,  originalPrice: 1699,  discount: 24, image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&q=90', category: 'Formal' },
+    { id: '57', name: 'Executive Leather Belt',         brand: 'Tommy Hilfiger', description: 'Black genuine leather belt with brushed buckle',              price: 1299,  originalPrice: 1799,  discount: 28, image: 'https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=800&q=90', category: 'Formal' },
+    { id: '58', name: 'Silk Formal Tie',                brand: 'Allen Solly',    description: 'Burgundy silk tie with subtle dot pattern',                   price: 899,   originalPrice: 1299,  discount: 31, image: 'https://images.unsplash.com/photo-1589756823695-278bc923f962?w=800&q=90', category: 'Formal' },
+    { id: '59', name: 'Formal Cufflinks Set',           brand: 'Raymond',        description: 'Silver-toned cufflinks with onyx stone',                      price: 1199,  originalPrice: 1599,  discount: 25, image: 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=800&q=90', category: 'Formal' },
+    { id: '60', name: 'Wool-Blend Overcoat',            brand: 'Blackberrys',    description: 'Camel wool-blend overcoat with notch lapel',                  price: 14999, originalPrice: 18999, discount: 21, image: 'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=800&q=90', category: 'Formal' },
+
+    // ===== CASUAL WEAR (ID 61-72) =====
+    { id: '61', name: 'Oversized Hoodie',               brand: 'Levis',          description: 'Grey fleece hoodie with kangaroo pocket',                     price: 1999,  originalPrice: 2999,  discount: 33, image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=800&q=90', category: 'Casual' },
+    { id: '62', name: 'Distressed Denim Jacket',        brand: 'Levis',          description: 'Mid-wash distressed denim jacket with frayed hems',           price: 3499,  originalPrice: 4499,  discount: 22, image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&q=90', category: 'Casual' },
+    { id: '63', name: 'Cotton Crew Neck Tee',           brand: 'US Polo Assn',   description: 'Burgundy cotton crew-neck t-shirt',                           price: 799,   originalPrice: 1299,  discount: 38, image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=90', category: 'Casual' },
+    { id: '64', name: 'Linen Casual Shirt',             brand: 'Tommy Hilfiger', description: 'Olive green linen shirt for summer evenings',                 price: 2499,  originalPrice: 3299,  discount: 24, image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&q=90', category: 'Casual' },
+    { id: '65', name: 'Slim Fit Jeans',                 brand: 'Levis',          description: 'Dark indigo slim-fit jeans with stretch denim',               price: 2799,  originalPrice: 3499,  discount: 20, image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=800&q=90', category: 'Casual' },
+    { id: '66', name: 'Graphic Print Sweatshirt',       brand: 'US Polo Assn',   description: 'Black sweatshirt with white graphic print',                   price: 1799,  originalPrice: 2499,  discount: 28, image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=800&q=90', category: 'Casual' },
+    { id: '67', name: 'Cargo Pants',                    brand: 'Wrangler',       description: 'Khaki cargo pants with multiple pockets',                    price: 2299,  originalPrice: 2999,  discount: 23, image: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800&q=90', category: 'Casual' },
+    { id: '68', name: 'Polo T-Shirt',                   brand: 'US Polo Assn',   description: 'Navy blue cotton pique polo shirt',                           price: 1199,  originalPrice: 1799,  discount: 33, image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=90', category: 'Casual' },
+    { id: '69', name: 'Corduroy Jacket',                brand: 'Tommy Hilfiger', description: 'Brown corduroy jacket with sherpa lining',                    price: 4499,  originalPrice: 5999,  discount: 25, image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&q=90', category: 'Casual' },
+    { id: '70', name: 'Henley Neck Tee',                brand: 'Levis',          description: 'Charcoal grey henley with three-button placket',              price: 999,   originalPrice: 1499,  discount: 33, image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=90', category: 'Casual' },
+    { id: '71', name: 'Relaxed Fit Joggers',            brand: 'Wrangler',       description: 'Grey melange joggers with elastic cuffs',                     price: 1799,  originalPrice: 2399,  discount: 25, image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=800&q=90', category: 'Casual' },
+    { id: '72', name: 'Striped Long Sleeve Tee',        brand: 'US Polo Assn',   description: 'Navy/white horizontal striped long-sleeve tee',               price: 1099,  originalPrice: 1599,  discount: 31, image: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=90', category: 'Casual' },
+
+    // ===== WINTER WEAR (ID 73-84) =====
+    { id: '73', name: 'Quilted Puffer Jacket',          brand: 'Tommy Hilfiger', description: 'Black quilted puffer with down alternative',                  price: 5999,  originalPrice: 7999,  discount: 25, image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=90', category: 'Winter' },
+    { id: '74', name: 'Wool Blend Overcoat',            brand: 'Raymond',        description: 'Charcoal wool-blend overcoat with double-button closure',     price: 12999, originalPrice: 15999, discount: 19, image: 'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=800&q=90', category: 'Winter' },
+    { id: '75', name: 'Cashmere Blend Sweater',         brand: 'Allen Solly',    description: 'Camel cashmere-blend V-neck sweater',                         price: 3499,  originalPrice: 4499,  discount: 22, image: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&q=90', category: 'Winter' },
+    { id: '76', name: 'Sherpa Lined Denim Jacket',      brand: 'Levis',          description: 'Blue denim jacket with sherpa fleece lining',                 price: 4499,  originalPrice: 5499,  discount: 18, image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&q=90', category: 'Winter' },
+    { id: '77', name: 'Knitted Beanie',                 brand: 'Tommy Hilfiger', description: 'Charcoal cable-knit wool beanie',                             price: 799,   originalPrice: 1199,  discount: 33, image: 'https://images.unsplash.com/photo-1576871337622-98d48d1cf531?w=800&q=90', category: 'Winter' },
+    { id: '78', name: 'Leather Gloves',                 brand: 'Raymond',        description: 'Brown genuine leather gloves with wool lining',              price: 1499,  originalPrice: 1999,  discount: 25, image: 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=800&q=90', category: 'Winter' },
+    { id: '79', name: 'Hooded Parka',                   brand: 'Tommy Hilfiger', description: 'Olive green parka with faux-fur hood trim',                   price: 7999,  originalPrice: 9999,  discount: 20, image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=90', category: 'Winter' },
+    { id: '80', name: 'Cable Knit Cardigan',            brand: 'Allen Solly',    description: 'Cream cable-knit button-up cardigan',                         price: 2999,  originalPrice: 3999,  discount: 25, image: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&q=90', category: 'Winter' },
+    { id: '81', name: 'Fleece Pullover',                brand: 'Levis',          description: 'Black quarter-zip fleece pullover',                           price: 1999,  originalPrice: 2799,  discount: 29, image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=800&q=90', category: 'Winter' },
+    { id: '82', name: 'Turtleneck Sweater',             brand: 'Van Heusen',     description: 'Burgundy knit turtleneck sweater',                            price: 2299,  originalPrice: 2999,  discount: 23, image: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&q=90', category: 'Winter' },
+    { id: '83', name: 'Wool Scarf',                     brand: 'Raymond',        description: 'Plaid wool scarf in red and black',                          price: 999,   originalPrice: 1499,  discount: 33, image: 'https://images.unsplash.com/photo-1519278409-1f56fdda7fe5?w=800&q=90', category: 'Winter' },
+    { id: '84', name: 'Insulated Vest',                 brand: 'Tommy Hilfiger', description: 'Navy quilted insulated vest',                                 price: 3499,  originalPrice: 4499,  discount: 22, image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=90', category: 'Winter' },
+
+    // ===== ETHNIC WEAR (ID 85-96) =====
+    { id: '85', name: 'Embroidered Sherwani',           brand: 'Manyavar',       description: 'Cream silk sherwani with golden zari embroidery',             price: 12999, originalPrice: 15999, discount: 19, image: 'https://images.unsplash.com/photo-1521119989659-a83eee488004?w=800&q=90', category: 'Ethnic' },
+    { id: '86', name: 'Silk Kurta Pajama',              brand: 'Fabindia',       description: 'Off-white silk kurta with churidar pajama',                   price: 3499,  originalPrice: 4499,  discount: 22, image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&q=90', category: 'Ethnic' },
+    { id: '87', name: 'Brocade Nehru Jacket',           brand: 'Manyavar',       description: 'Royal blue brocade Nehru jacket',                             price: 4999,  originalPrice: 6499,  discount: 23, image: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800&q=90', category: 'Ethnic' },
+    { id: '88', name: 'Pathani Kurta Set',              brand: 'W for Man',      description: 'Maroon pathani kurta with salwar',                            price: 2799,  originalPrice: 3599,  discount: 22, image: 'https://images.unsplash.com/photo-1520975954732-35dd22299614?w=800&q=90', category: 'Ethnic' },
+    { id: '89', name: 'Dhoti Kurta Set',                brand: 'Fabindia',       description: 'White cotton dhoti kurta for traditional pujas',              price: 2299,  originalPrice: 2999,  discount: 23, image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=90', category: 'Ethnic' },
+    { id: '90', name: 'Festive Modaki Kurta',           brand: 'Manyavar',       description: 'Saffron modaki kurta with mirror work',                       price: 3999,  originalPrice: 4999,  discount: 20, image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&q=90', category: 'Ethnic' },
+    { id: '91', name: 'Velvet Indo-Western',            brand: 'W for Man',      description: 'Bottle-green velvet indo-western suit',                       price: 8999,  originalPrice: 10999, discount: 18, image: 'https://images.unsplash.com/photo-1521119989659-a83eee488004?w=800&q=90', category: 'Ethnic' },
+    { id: '92', name: 'Cotton Linen Kurta',             brand: 'Fabindia',       description: 'Sage green cotton-linen kurta for daily ethnic wear',         price: 1799,  originalPrice: 2399,  discount: 25, image: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800&q=90', category: 'Ethnic' },
+    { id: '93', name: 'Silk Blend Saffron Kurta',       brand: 'Manyavar',       description: 'Saffron silk-blend kurta with mandarin collar',               price: 2999,  originalPrice: 3799,  discount: 21, image: 'https://images.unsplash.com/photo-1520975954732-35dd22299614?w=800&q=90', category: 'Ethnic' },
+    { id: '94', name: 'Embroidered Jodhpuri Suit',      brand: 'W for Man',      description: 'Cream Jodhpuri suit with intricate thread work',              price: 9999,  originalPrice: 12999, discount: 23, image: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=800&q=90', category: 'Ethnic' },
+    { id: '95', name: 'Festive Kurta Pyjama Set',       brand: 'Fabindia',       description: 'Maroon festive kurta with churidar and dupatta',              price: 3499,  originalPrice: 4499,  discount: 22, image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=90', category: 'Ethnic' },
+    { id: '96', name: 'Wedding Sherwani Set',           brand: 'Manyavar',       description: 'Ivory wedding sherwani with matching churidar and stole',     price: 18999, originalPrice: 22999, discount: 17, image: 'https://images.unsplash.com/photo-1521119989659-a83eee488004?w=800&q=90', category: 'Ethnic' }
+
 
 ];
 
@@ -5200,11 +5278,24 @@
             const all = JSON.parse(localStorage.getItem('vynox_loyalty') || '{}');
             all[email] = (all[email] || 0) + pts;
             localStorage.setItem('vynox_loyalty', JSON.stringify(all));
+            // ✅ FIX #12: Sync to Firebase so points aren't lost on different device
+            if (typeof _syncLoyaltyToFirebase === 'function') _syncLoyaltyToFirebase(email, all[email]);
         }
         function getLoyaltyPoints(email) {
             if (!email) return 0;
             const all = JSON.parse(localStorage.getItem('vynox_loyalty') || '{}');
-            return all[email] || 0;
+            var local = all[email] || 0;
+            // ✅ FIX #12: Best-effort refresh from Firebase (async, updates display when ready)
+            if (typeof _loadLoyaltyFromFirebase === 'function') {
+                _loadLoyaltyFromFirebase(email, function(remotePts) {
+                    if (remotePts > local) {
+                        // Update display if element exists
+                        var el = document.getElementById('accLoyaltyPts');
+                        if (el) el.textContent = remotePts;
+                    }
+                });
+            }
+            return local; // return immediately for synchronous callers
         }
 
         // ✅ ABANDONED CART RECOVERY (demo: localStorage flag + reminder toast; production: backend email cron)
@@ -5353,12 +5444,33 @@
             if (e.target === this) closeStoreProductModal();
         });
 
-        // Close search or modal on Escape
+        // ✅ FIX #6: ESC key closes ALL modals/overlays/drawers (not just 2)
         document.addEventListener('keydown', e => {
-            if (e.key === 'Escape') {
-                document.getElementById('searchOverlay').style.display = 'none';
-                closeStoreProductModal();
-            }
+            if (e.key !== 'Escape') return;
+            // Customer-facing
+            var searchO = document.getElementById('searchOverlay'); if (searchO) searchO.style.display = 'none';
+            if (typeof closeStoreProductModal === 'function') closeStoreProductModal();
+            if (typeof closeCartDrawer === 'function') closeCartDrawer();
+            if (typeof closeWishlistDrawer === 'function') closeWishlistDrawer();
+            if (typeof closeAccountModal === 'function') closeAccountModal();
+            if (typeof closeTrackOrderModal === 'function') closeTrackOrderModal();
+            if (typeof closeSizeGuide === 'function') closeSizeGuide();
+            if (typeof closeNewsletterPopup === 'function') closeNewsletterPopup();
+            // Customer order form
+            var ofo = document.getElementById('orderFormOverlay'); if (ofo && ofo.style.display !== 'none') { if (typeof closeCustomerModal === 'function') closeCustomerModal(); }
+            // Admin modals (any visible admin-inner-modal)
+            document.querySelectorAll('.admin-inner-modal').forEach(function(m){
+                if (m.style.display !== 'none') {
+                    // Try to find and click its close button
+                    var closeBtn = m.querySelector('.admin-modal-close');
+                    if (closeBtn) closeBtn.click();
+                    else m.style.display = 'none';
+                }
+            });
+            // Admin login modal
+            var alm = document.getElementById('adminLoginModal'); if (alm && alm.style.display !== 'none') { if (typeof closeAdminLogin === 'function') closeAdminLogin(); }
+            // Delete-confirm dialog
+            var dco = document.getElementById('deleteConfirmOverlay'); if (dco && dco.classList.contains('open')) { if (typeof closeDeleteConfirm === 'function') closeDeleteConfirm(); }
         });
 
         // ===================== CART =====================
@@ -5705,12 +5817,18 @@
             // ✅ FIX #4 + #5: Apply any admin-saved hero & category image URLs
             applySiteImages();
             updatePerPageVisibility();   // ✅ FIX #2: per-page selector hidden on "All" by default
-            // Cart icon opens drawer
-            document.querySelector('.cart-icon-btn').addEventListener('click', openCartDrawer);
-            // Cart overlay closes active drawer
-            document.getElementById('cartOverlay').addEventListener('click', () => {
-                closeCartDrawer();
-                closeWishlistDrawer();
+            // ✅ FIX #5: Cart icon wiring — use onclick (survives re-renders) + delegation fallback
+            var cartIconBtn = document.querySelector('.cart-icon-btn');
+            if (cartIconBtn) {
+                cartIconBtn.onclick = openCartDrawer;  // primary: survives re-renders
+                cartIconBtn.addEventListener('click', openCartDrawer, { once: false, passive: true }); // fallback
+            }
+            // ✅ FIX #5: Cart overlay closes via onclick delegation on document (works even if overlay is re-created)
+            document.addEventListener('click', function(e) {
+                if (e.target && e.target.id === 'cartOverlay') {
+                    closeCartDrawer();
+                    closeWishlistDrawer();
+                }
             });
 
             // ✅ Initialize new features
@@ -5803,7 +5921,8 @@
             const subs = JSON.parse(localStorage.getItem('vynox_subscribers') || '[]');
             if (!subs.includes(email)) subs.push(email);
             localStorage.setItem('vynox_subscribers', JSON.stringify(subs));
-            // TODO backend: POST /api/newsletter/subscribe — should send welcome email with WELCOME10 coupon
+            // ✅ FIX #11: Sync to Firebase so signups aren't lost on device switch
+            if (typeof _syncNewsletterToFirebase === 'function') _syncNewsletterToFirebase(email);
             showToast('🎉 Subscribed! Check your inbox for a 10% off welcome coupon.', 'success');
             if (isPopup) closeNewsletterPopup(); else document.getElementById('footerEmail').value = '';
             trackAnalytics('subscribe', { method: isPopup ? 'popup' : 'footer' });
@@ -6156,138 +6275,6 @@
             '</div>';
         }
 
-
-        // ✅ ADDRESS MANAGEMENT
-        function getSavedAddresses(email) {
-            var s = localStorage.getItem('vynox_addresses_' + email);
-            return s ? JSON.parse(s) : [];
-        }
-        function saveAddresses(email, addrs) {
-            localStorage.setItem('vynox_addresses_' + email, JSON.stringify(addrs));
-        }
-        function addNewAddress() {
-            var html = '<div style="text-align:left;">' +
-                '<h4 style="margin-bottom:10px;">Add New Address</h4>' +
-                '<input type="text" id="newAddrName" placeholder="Full Name *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '<input type="tel" id="newAddrPhone" placeholder="Phone Number *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;" maxlength="10">' +
-                '<input type="text" id="newAddrLine1" placeholder="Address Line 1 *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '<input type="text" id="newAddrLine2" placeholder="Address Line 2 (optional)" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '<div style="display:flex;gap:8px;">' +
-                '<input type="text" id="newAddrCity" placeholder="City *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '<input type="text" id="newAddrState" placeholder="State *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '</div>' +
-                '<div style="display:flex;gap:8px;">' +
-                '<input type="text" id="newAddrPin" placeholder="PIN Code *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;" maxlength="6">' +
-                '<input type="text" id="newAddrCountry" placeholder="Country" value="India" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '</div>' +
-                '<button class="primary" onclick="saveNewAddress()" style="margin-top:4px;">Save Address</button>' +
-                '</div>';
-            document.getElementById('accAddressList').innerHTML = html + '<div id="accAddressListBackup" style="display:none;"></div>';
-        }
-        function saveNewAddress() {
-            var sess = JSON.parse(localStorage.getItem('vynox_session') || 'null');
-            if (!sess || !sess.email) return;
-            var name = document.getElementById('newAddrName').value.trim();
-            var phone = document.getElementById('newAddrPhone').value.trim();
-            var line1 = document.getElementById('newAddrLine1').value.trim();
-            var line2 = document.getElementById('newAddrLine2').value.trim();
-            var city = document.getElementById('newAddrCity').value.trim();
-            var state = document.getElementById('newAddrState').value.trim();
-            var pin = document.getElementById('newAddrPin').value.trim();
-            var country = document.getElementById('newAddrCountry').value.trim() || 'India';
-            if (!name || !phone || !line1 || !city || !state || !pin) { showToast('Please fill all required fields', 'error'); return; }
-            if (!/^\d{6}$/.test(pin)) { showToast('Please enter a valid 6-digit PIN code', 'error'); return; }
-            var addrs = getSavedAddresses(sess.email);
-            addrs.push({ fullName: name, phone: phone, line1: line1, line2: line2, city: city, state: state, pinCode: pin, country: country });
-            saveAddresses(sess.email, addrs);
-            showToast('Address saved!', 'success');
-            initAccountSession();
-        }
-        function editAddress(idx) {
-            var sess = safeParseJSON(localStorage.getItem('vynox_session') || 'null', null);
-            if (!sess || !sess.email) return;
-            var addrs = getSavedAddresses(sess.email);
-            var a = addrs[idx];
-            if (!a) return;
-            // ✅ FIX #14 (audit): Use escapeAttr (escapes < > & " ' `) for value="..." attributes.
-            //    Previously only `"` was escaped, allowing attribute XSS via payloads like
-            //    `"><img src=x onerror=alert(1)>`.
-            var html = '<div style="text-align:left;">' +
-                '<h4 style="margin-bottom:10px;">Edit Address</h4>' +
-                '<input type="text" id="editAddrName" value="' + escapeAttr(a.fullName||'') + '" placeholder="Full Name *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '<input type="tel" id="editAddrPhone" value="' + escapeAttr(a.phone||'') + '" placeholder="Phone *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;" maxlength="10">' +
-                '<input type="text" id="editAddrLine1" value="' + escapeAttr(a.line1||'') + '" placeholder="Line 1 *" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '<input type="text" id="editAddrLine2" value="' + escapeAttr(a.line2||'') + '" placeholder="Line 2" style="width:100%;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '<div style="display:flex;gap:8px;">' +
-                '<input type="text" id="editAddrCity" value="' + escapeAttr(a.city||'') + '" placeholder="City *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '<input type="text" id="editAddrState" value="' + escapeAttr(a.state||'') + '" placeholder="State *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '</div>' +
-                '<div style="display:flex;gap:8px;">' +
-                '<input type="text" id="editAddrPin" value="' + escapeAttr(a.pinCode||'') + '" placeholder="PIN *" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;" maxlength="6">' +
-                '<input type="text" id="editAddrCountry" value="' + escapeAttr(a.country||'India') + '" placeholder="Country" style="flex:1;padding:10px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:8px;font-size:14px;">' +
-                '</div>' +
-                '<button class="primary" onclick="saveEditedAddress(' + idx + ')" style="margin-top:4px;">Update Address</button>' +
-                '</div>';
-            document.getElementById('accAddressList').innerHTML = html;
-        }
-        function saveEditedAddress(idx) {
-            var sess = safeParseJSON(localStorage.getItem('vynox_session') || 'null', null);
-            if (!sess || !sess.email) return;
-            var addrs = getSavedAddresses(sess.email);
-            addrs[idx] = {
-                fullName: document.getElementById('editAddrName').value.trim(),
-                phone: document.getElementById('editAddrPhone').value.trim(),
-                line1: document.getElementById('editAddrLine1').value.trim(),
-                line2: document.getElementById('editAddrLine2').value.trim(),
-                city: document.getElementById('editAddrCity').value.trim(),
-                state: document.getElementById('editAddrState').value.trim(),
-                pinCode: document.getElementById('editAddrPin').value.trim(),
-                country: document.getElementById('editAddrCountry').value.trim() || 'India'
-            };
-            saveAddresses(sess.email, addrs);
-            showToast('Address updated!', 'success');
-            initAccountSession();
-        }
-        function deleteAddress(idx) {
-            if (!confirm('Delete this address?')) return;
-            var sess = safeParseJSON(localStorage.getItem('vynox_session') || 'null', null);
-            if (!sess || !sess.email) return;
-            var addrs = getSavedAddresses(sess.email);
-            addrs.splice(idx, 1);
-            saveAddresses(sess.email, addrs);
-            showToast('Address deleted', '');
-            initAccountSession();
-        }
-
-        // ✅ ORDER DETAIL VIEW
-        function showOrderDetail(orderId) {
-            var o = getOrders().find(function(x){ return x.id === orderId; });
-            if (!o) { showToast('Order not found', 'error'); return; }
-            var da = o.deliveryAddress || {};
-            var addrStr = da.line1 ? (da.fullName + ', ' + da.line1 + (da.line2 ? ', ' + da.line2 : '') + ', ' + da.city + ', ' + da.state + ' - ' + da.pinCode + ', ' + (da.country||'India')) : (o.address || 'Address not recorded');
-            var itemsHtml = (o.items||[]).map(function(i){ return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>' + escapeHtml(i.name + ' x' + i.qty) + '</span><span>₹' + (i.price * i.qty).toLocaleString('en-IN') + '</span></div>'; }).join('');
-            var statusHtml = ['pending','confirmed','shipped','delivered'].map(function(s) {
-                var cur = (o.status||'pending');
-                var isActive = s === cur;
-                var isDone = ['pending','confirmed','shipped','delivered'].indexOf(s) <= ['pending','confirmed','shipped','delivered'].indexOf(cur);
-                return '<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;margin:3px;border-radius:99px;font-size:12px;font-weight:600;' +
-                    (isActive ? 'background:#111;color:#fff;' : isDone ? 'background:#dcfce7;color:#166534;' : 'background:#f3f4f6;color:#999;') +
-                    '">' + (isDone ? '✓ ' : '') + s + '</div>';
-            }).join('');
-            var html = '<div style="font-size:13px;line-height:1.6;">' +
-                '<div style="font-size:16px;font-weight:700;margin-bottom:8px;">Order ' + escapeHtml(o.id) + '</div>' +
-                '<div style="margin-bottom:12px;">' + statusHtml + '</div>' +
-                '<div style="background:#f9f9f9;padding:12px;border-radius:8px;margin-bottom:12px;">' +
-                '<strong>Items:</strong>' + itemsHtml +
-                '<div style="border-top:1px solid #eee;padding-top:6px;margin-top:6px;display:flex;justify-content:space-between;font-weight:700;"><span>Total</span><span>₹' + (o.total||0).toLocaleString('en-IN') + '</span></div>' +
-                '</div>' +
-                '<div style="margin-bottom:12px;"><strong>Payment:</strong> ' + escapeHtml((o.paymentMethod||'online').toUpperCase()) + (o.paymentId ? ' · ' + escapeHtml(o.paymentId) : '') + '</div>' +
-                '<div style="margin-bottom:12px;"><strong>Delivery Address:</strong><br>' + escapeHtml(addrStr) + '</div>' +
-                '<div style="color:#888;">Placed ' + new Date(o.date).toLocaleString('en-IN') + '</div>' +
-                '<button class="primary" style="margin-top:14px;" onclick="initAccountSession()">← Back to Profile</button>' +
-                '</div>';
-            document.getElementById('accOrdersList').innerHTML = html;
-        }
 
 
         // ======= ADDRESS MANAGEMENT =======
@@ -7235,7 +7222,7 @@
     </div>
 
     <!-- ✅ SIZE GUIDE MODAL -->
-    <div class="track-modal" id="sizeGuideModal" role="dialog" aria-modal="true" aria-label="Size Guide">
+    <div class="size-guide-modal" id="sizeGuideModal" role="dialog" aria-modal="true" aria-label="Size Guide">
         <div class="modal-box" style="max-width:560px;">
             <button onclick="closeSizeGuide()" aria-label="Close" class="popup-close-btn">✕</button>
             <h3>📏 Size Guide</h3>
@@ -8597,12 +8584,6 @@ function toggleRzpSwitch() {
     if (cb && knob && cb.checked) knob.style.transform = 'translateX(22px)';
 })();
 
-function maskSecret(val, keepLast) {
-    if (!val) return '';
-    keepLast = keepLast || 4;
-    if (val.length <= keepLast) return '••••';
-    return val.substring(0, 4) + '••••••' + val.substring(val.length - keepLast);
-}
 
 function getRazorpayConfig() {
     var s = localStorage.getItem('vynox_razorpay_config');
@@ -9553,6 +9534,101 @@ function applyDrawerFilters() {
     }
 
     console.log('%c[Vynox] Mobile Admin UX v2 loaded', 'color:#16a34a;font-weight:bold;font-size:14px;');
+})();
+
+
+/* ════════════════════════════════════════════════════════════════════
+   ✅ FIX #11 + #12: Newsletter & Loyalty sync to Firebase
+   (localStorage stays as offline cache; Firestore is source of truth)
+   ════════════════════════════════════════════════════════════════════ */
+(function() {
+    'use strict';
+
+    // ─── Newsletter sync ─────────────────────────────────────────────
+    window._syncNewsletterToFirebase = function(email) {
+        if (typeof db === 'undefined' || !db) return; // demo mode — localStorage only
+        try {
+            db.collection('vynox_subscribers').doc(email).set({
+                email: email,
+                subscribedAt: new Date().toISOString(),
+                source: 'web'
+            }, { merge: true }).catch(function(e) {
+                console.warn('Newsletter sync failed:', e);
+            });
+        } catch (e) { console.warn('Newsletter sync error:', e); }
+    };
+
+    window._loadNewsletterSubscribers = function(callback) {
+        if (typeof db === 'undefined' || !db) {
+            // Demo mode — return localStorage list
+            var local = JSON.parse(localStorage.getItem('vynox_subscribers') || '[]');
+            if (callback) callback(local);
+            return;
+        }
+        try {
+            db.collection('vynox_subscribers').get().then(function(snap) {
+                var list = [];
+                snap.forEach(function(doc) { list.push(doc.data().email); });
+                // Merge with localStorage (in case offline captured extra)
+                var local = JSON.parse(localStorage.getItem('vynox_subscribers') || '[]');
+                local.forEach(function(e) { if (list.indexOf(e) === -1) list.push(e); });
+                localStorage.setItem('vynox_subscribers', JSON.stringify(list));
+                if (callback) callback(list);
+            }).catch(function(e) {
+                console.warn('Newsletter load failed:', e);
+                var local = JSON.parse(localStorage.getItem('vynox_subscribers') || '[]');
+                if (callback) callback(local);
+            });
+        } catch (e) {
+            var local = JSON.parse(localStorage.getItem('vynox_subscribers') || '[]');
+            if (callback) callback(local);
+        }
+    };
+
+    // ─── Loyalty points sync ─────────────────────────────────────────
+    window._syncLoyaltyToFirebase = function(email, points) {
+        if (typeof db === 'undefined' || !db) return;
+        try {
+            db.collection('vynox_loyalty').doc(email).set({
+                email: email,
+                points: points,
+                updatedAt: new Date().toISOString()
+            }, { merge: true }).catch(function(e) {
+                console.warn('Loyalty sync failed:', e);
+            });
+        } catch (e) { console.warn('Loyalty sync error:', e); }
+    };
+
+    window._loadLoyaltyFromFirebase = function(email, callback) {
+        if (typeof db === 'undefined' || !db) {
+            var all = JSON.parse(localStorage.getItem('vynox_loyalty') || '{}');
+            if (callback) callback(all[email] || 0);
+            return;
+        }
+        try {
+            db.collection('vynox_loyalty').doc(email).get().then(function(doc) {
+                var remotePts = doc.exists ? (doc.data().points || 0) : 0;
+                // Take the MAX of remote vs local (don't lose points earned offline)
+                var all = JSON.parse(localStorage.getItem('vynox_loyalty') || '{}');
+                var localPts = all[email] || 0;
+                var finalPts = Math.max(remotePts, localPts);
+                if (finalPts !== localPts) {
+                    all[email] = finalPts;
+                    localStorage.setItem('vynox_loyalty', JSON.stringify(all));
+                }
+                if (callback) callback(finalPts);
+            }).catch(function(e) {
+                console.warn('Loyalty load failed:', e);
+                var all = JSON.parse(localStorage.getItem('vynox_loyalty') || '{}');
+                if (callback) callback(all[email] || 0);
+            });
+        } catch (e) {
+            var all = JSON.parse(localStorage.getItem('vynox_loyalty') || '{}');
+            if (callback) callback(all[email] || 0);
+        }
+    };
+
+    console.log('%c[Vynox] Newsletter + Loyalty Firebase sync ready', 'color:#16a34a;font-weight:bold;');
 })();
 
 </script>
