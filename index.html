@@ -1822,38 +1822,132 @@
                 background: #f3f4f6;
             }
 
-            /* ── ADMIN ── */
-            .admin-panel { flex-direction: column !important; height: 100dvh !important; overflow: hidden !important; }
-            .admin-sidebar { width: 100% !important; height: auto !important; min-height: unset !important; max-height: 64px !important; position: relative !important; flex-direction: row !important; overflow-x: auto; overflow-y: hidden !important; flex-shrink: 0 !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-            .admin-sidebar::-webkit-scrollbar { display: none; }
+            /* ══════════════════════════════════════
+               ADMIN PANEL — COMPLETE MOBILE LAYOUT
+               Flipkart/Amazon style: top tab bar + scrollable content
+            ══════════════════════════════════════ */
+            .admin-panel {
+                flex-direction: column !important;
+                height: 100dvh !important;
+                height: -webkit-fill-available !important;
+                overflow: hidden !important;
+            }
+            /* TOP NAV BAR — fixed 56px strip at top */
+            .admin-sidebar {
+                width: 100% !important;
+                height: 56px !important;
+                min-height: 56px !important;
+                max-height: 56px !important;
+                flex-direction: row !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                flex-shrink: 0 !important;
+                scrollbar-width: none !important;
+                -webkit-overflow-scrolling: touch;
+                padding: 0 !important;
+                border-bottom: 1px solid #1e1e1e;
+            }
+            .admin-sidebar::-webkit-scrollbar { display: none !important; }
             .admin-sidebar-logo { display: none !important; }
-            .admin-nav { display: flex !important; flex-direction: row !important; padding: 0 !important; align-items: stretch; flex: 1; }
-            .admin-main { padding: 10px !important; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-            .admin-nav-item { padding: 6px 10px !important; flex-direction: column !important; gap: 2px !important; font-size: 8.5px !important; border-left: none !important; border-bottom: 3px solid transparent !important; min-width: 54px; white-space: nowrap; flex-shrink: 0; justify-content: center !important; align-items: center !important; height: 64px; }
-            .admin-nav-item.active { border-left-color: transparent !important; border-bottom-color: #fff !important; background: #141414 !important; color: #fff !important; }
-            .admin-nav-item:hover { background: #141414; }
-            .admin-nav-item .nav-icon { font-size: 18px !important; width: auto !important; display: block; }
-            .admin-nav-item > span:last-child { display: block !important; font-size: 8.5px !important; }
             .admin-sidebar-footer { display: none !important; }
-            /* Admin stat cards */
-            .admin-stats-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-            .admin-stat-value { font-size: 22px !important; }
-            /* Admin modals slide up from bottom on mobile */
+            /* NAV ITEMS — horizontal tabs */
+            .admin-nav {
+                display: flex !important;
+                flex-direction: row !important;
+                padding: 0 !important;
+                align-items: stretch;
+                height: 56px !important;
+                min-width: max-content;
+            }
+            .admin-nav-item {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 2px !important;
+                padding: 4px 14px !important;
+                font-size: 9px !important;
+                border-left: none !important;
+                border-bottom: 3px solid transparent !important;
+                border-top: none !important;
+                min-width: 56px !important;
+                height: 56px !important;
+                flex-shrink: 0 !important;
+                white-space: nowrap !important;
+                color: #888 !important;
+                cursor: pointer;
+                transition: all 0.15s;
+            }
+            .admin-nav-item.active {
+                border-left-color: transparent !important;
+                border-bottom-color: #fff !important;
+                background: #1a1a1a !important;
+                color: #fff !important;
+            }
+            .admin-nav-item:hover { background: #141414 !important; color: #ccc !important; }
+            .admin-nav-item .nav-icon { font-size: 17px !important; width: auto !important; line-height: 1; }
+            .admin-nav-item > span:last-child { display: block !important; font-size: 9px !important; line-height: 1; }
+            /* CONTENT AREA — takes remaining height, fully scrollable */
+            .admin-main {
+                flex: 1 !important;
+                min-height: 0 !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                -webkit-overflow-scrolling: touch !important;
+                padding: 12px !important;
+                height: calc(100dvh - 56px) !important;
+            }
+            /* SECTION CONTENT */
+            .admin-section { width: 100% !important; }
+            .admin-page-header { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; margin-bottom: 14px !important; }
+            .admin-page-title { font-size: 17px !important; }
+            .admin-page-subtitle { font-size: 12px !important; }
+            /* STAT CARDS — 2 per row */
+            .admin-stats-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; margin-bottom: 14px !important; }
+            .admin-stat-card { padding: 12px !important; }
+            .admin-stat-value { font-size: 20px !important; }
+            .admin-stat-label { font-size: 10px !important; }
+            /* TABLES — horizontal scroll */
+            .admin-table-container { overflow-x: auto !important; -webkit-overflow-scrolling: touch; border-radius: 10px !important; }
+            .admin-table { min-width: 560px; font-size: 11px !important; }
+            .admin-table th { padding: 8px 10px !important; font-size: 10px !important; }
+            .admin-table td { padding: 8px 10px !important; font-size: 11px !important; }
+            .admin-table-header { padding: 10px 12px !important; flex-wrap: wrap; gap: 8px !important; }
+            /* FORMS */
+            .admin-form-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+            .admin-form-control { font-size: 16px !important; padding: 12px !important; }
+            .admin-form-group label { font-size: 11px !important; }
+            /* SETTINGS */
+            .settings-card { padding: 14px !important; margin-bottom: 12px !important; }
+            .settings-card-title { font-size: 14px !important; }
+            .settings-card-sub { font-size: 12px !important; margin-bottom: 12px !important; }
+            /* BUTTONS */
+            .admin-btn { padding: 10px 14px !important; font-size: 12px !important; }
+            .admin-btn-sm { padding: 7px 10px !important; font-size: 11px !important; }
+            /* MODALS — full bottom sheet */
             .admin-inner-modal { padding: 0 !important; align-items: flex-end !important; }
-            .admin-inner-modal-box { border-radius: 20px 20px 0 0 !important; max-height: 92vh !important; overflow-y: auto !important; width: 100% !important; max-width: 100% !important; padding: 20px 16px 32px !important; }
-            /* Billing on mobile: stack */
-            .billing-layout { grid-template-columns: 1fr !important; height: auto !important; }
-            /* Reports */
-            .reports-grid { grid-template-columns: 1fr !important; }
-            /* Admin page header wrap */
-            .admin-page-header { flex-direction: column !important; align-items: flex-start !important; }
-            .admin-page-title { font-size: 18px !important; }
-            /* Admin tables */
-            .admin-table { font-size: 11px; }
-            .admin-table th, .admin-table td { padding: 5px 8px !important; }
-            /* Settings cards */
-            .settings-card { padding: 16px !important; }
-            .admin-form-grid { grid-template-columns: 1fr !important; }
+            .admin-inner-modal-box {
+                border-radius: 20px 20px 0 0 !important;
+                max-height: 90vh !important;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 20px 16px 36px !important;
+            }
+            /* BILLING — stacked */
+            .billing-layout { grid-template-columns: 1fr !important; height: auto !important; gap: 12px !important; }
+            .billing-scanner-area { padding: 12px !important; }
+            .billing-cart-area { padding: 12px !important; overflow: visible !important; }
+            /* REPORTS */
+            .reports-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+            .report-card { padding: 14px !important; }
+            /* INVENTORY / PRODUCTS search row */
+            .billing-scan-input-row { flex-wrap: wrap !important; }
+            .billing-scan-input { min-width: 100% !important; font-size: 16px !important; }
+            /* TOAST at top on mobile (not hidden behind keyboard) */
+            .admin-toast { bottom: auto !important; top: 12px !important; left: 50% !important; right: auto !important; transform: translateX(-50%) translateY(-80px) !important; width: 90vw !important; text-align: center !important; }
+            .admin-toast.show { transform: translateX(-50%) translateY(0) !important; }
         }
 
         /* ═══════════════════════════════════════
@@ -2356,21 +2450,21 @@
         .admin-btn-primary{width:100%;padding:14px;background:#000;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;transition:opacity 0.2s;}
         .admin-btn-primary:hover{opacity:0.82;}
         .admin-login-error{color:#ef4444;font-size:13px;margin-bottom:10px;display:none;}
-        .admin-panel{position:fixed;top:0;left:0;right:0;bottom:0;background:#f4f5f7;z-index:8000;display:flex;overflow:hidden;}
-        .admin-sidebar{width:230px;min-height:100vh;background:#0a0a0a;color:#fff;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
-        .admin-sidebar-logo{padding:22px 20px;font-size:19px;font-weight:700;letter-spacing:-0.3px;border-bottom:1px solid #1e1e1e;}
+        .admin-panel{position:fixed;top:0;left:0;right:0;bottom:0;background:#f4f5f7;z-index:8000;display:flex;flex-direction:row;overflow:hidden;}
+        .admin-sidebar{width:230px;height:100%;background:#0a0a0a;color:#fff;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;overflow-x:hidden;}
+        .admin-sidebar-logo{padding:22px 20px;font-size:19px;font-weight:700;letter-spacing:-0.3px;border-bottom:1px solid #1e1e1e;flex-shrink:0;}
         .admin-sidebar-logo span{font-size:10px;font-weight:400;color:#555;display:block;margin-top:3px;letter-spacing:1.5px;text-transform:uppercase;}
-        .admin-nav{padding:10px 0;flex:1;}
-        .admin-nav-item{display:flex;align-items:center;gap:11px;padding:11px 20px;color:#777;font-size:14px;cursor:pointer;transition:all 0.15s;border-left:3px solid transparent;}
+        .admin-nav{padding:10px 0;flex:1;overflow-y:auto;}
+        .admin-nav-item{display:flex;align-items:center;gap:11px;padding:11px 20px;color:#777;font-size:14px;cursor:pointer;transition:all 0.15s;border-left:3px solid transparent;white-space:nowrap;}
         .admin-nav-item:hover{color:#ddd;background:#141414;}
         .admin-nav-item.active{color:#fff;background:#141414;border-left-color:#fff;}
-        .admin-nav-item .nav-icon{font-size:15px;width:20px;}
-        .admin-sidebar-footer{padding:16px 20px;border-top:1px solid #1e1e1e;}
+        .admin-nav-item .nav-icon{font-size:15px;width:20px;flex-shrink:0;}
+        .admin-sidebar-footer{padding:16px 20px;border-top:1px solid #1e1e1e;flex-shrink:0;}
         .admin-user-info{font-size:12px;color:#555;margin-bottom:10px;}
         .admin-user-info strong{color:#ccc;display:block;font-size:13px;}
         .admin-logout-btn{width:100%;padding:8px;background:#141414;color:#666;border:1px solid #2a2a2a;border-radius:8px;font-size:12px;cursor:pointer;}
         .admin-logout-btn:hover{background:#222;color:#ccc;}
-        .admin-main{flex:1;overflow-y:auto;padding:26px;}
+        .admin-main{flex:1;overflow-y:auto;overflow-x:hidden;padding:26px;}
         .admin-section{display:none;}
         .admin-section.active{display:block;}
         .admin-page-header{margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
@@ -2469,6 +2563,390 @@
         @media(max-width:900px){.billing-layout{grid-template-columns:1fr;height:auto;}.reports-grid{grid-template-columns:1fr;}.admin-form-grid{grid-template-columns:1fr;}}
         @media print{.admin-sidebar,.admin-modal-header button,.admin-btn-primary,.admin-btn{display:none;}}
 
+
+/* ════════════════════════════════════════════════════════════════════
+   VYNOX ADMIN — 200% MOBILE UX UPGRADE
+   • Swipe-to-reveal edit/delete on cards (native-mail-app style)
+   • Mobile-first card layout (no more horizontal-scroll tables)
+   • Floating Action Button (FAB) for Add actions
+   • Safe-area insets for notched phones
+   • Pull-to-refresh
+   • Drag-to-dismiss bottom-sheets
+   • 44x44 touch targets, 16px input font (no iOS zoom)
+   • Haptic feedback via navigator.vibrate()
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Hide mobile card containers on desktop, show tables */
+.mobile-cards-container { display: none !important; }
+.admin-fab { display: none !important; }
+.mobile-pull-refresh { display: none !important; }
+
+/* Touch-target sizing for ALL admin buttons (mobile + desktop) */
+.admin-btn, .admin-btn-sm, .admin-btn-primary, .admin-logout-btn,
+.admin-csv-btn { min-height: 40px; min-width: 40px; }
+
+/* Prevent iOS zoom on input focus (must be >=16px) */
+@media (max-width: 1024px) {
+    .admin-form-control, .admin-input,
+    .billing-scan-input, .billing-scan-input-row input,
+    .admin-table input, .admin-table select,
+    #barcodeInput, #billCustomer, #bpQty,
+    .admin-inner-modal-box input,
+    .admin-inner-modal-box select,
+    .admin-inner-modal-box textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* Better focus-visible rings everywhere */
+.admin-nav-item:focus-visible,
+.admin-btn:focus-visible,
+.admin-btn-sm:focus-visible,
+.admin-form-control:focus-visible,
+.swipe-card:focus-visible,
+.m-action:focus-visible {
+    outline: 3px solid #2563eb !important;
+    outline-offset: 2px !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   SWIPE-TO-REVEAL CARD  (used for products / inventory / orders on mobile)
+   ════════════════════════════════════════════════════════════════════ */
+.swipe-card {
+    position: relative;
+    background: #fff;
+    border-radius: 14px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    border: 1px solid #ececec;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: pan-y; /* allow vertical scroll, capture horizontal swipe */
+}
+.swipe-card-content {
+    position: relative;
+    z-index: 2;
+    background: #fff;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transform: translateX(0);
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+    cursor: pointer;
+}
+.swipe-card-content.swiping { transition: none; }
+.swipe-card.open .swipe-card-content { transform: translateX(var(--swipe-reveal, -160px)); }
+
+.swipe-card-thumb {
+    width: 56px; height: 56px;
+    border-radius: 10px; object-fit: cover;
+    flex-shrink: 0; background: #f3f4f6;
+}
+.swipe-card-thumb-placeholder {
+    width: 56px; height: 56px; border-radius: 10px;
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+}
+.swipe-card-body { flex: 1; min-width: 0; }
+.swipe-card-row1 {
+    display: flex; justify-content: space-between;
+    align-items: flex-start; gap: 8px; margin-bottom: 4px;
+}
+.swipe-card-title {
+    font-size: 14px; font-weight: 600; color: #111;
+    line-height: 1.3; flex: 1; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.swipe-card-price {
+    font-size: 15px; font-weight: 700; color: #111;
+    white-space: nowrap; flex-shrink: 0;
+}
+.swipe-card-sub {
+    font-size: 11px; color: #999; margin-bottom: 6px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.swipe-card-meta {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    font-size: 11px; color: #666;
+}
+.swipe-card-meta .badge { font-size: 10px; padding: 2px 8px; }
+.swipe-card-chevron {
+    color: #c0c0c0; font-size: 18px; flex-shrink: 0;
+    margin-left: 4px; transition: transform 0.2s;
+}
+.swipe-card.open .swipe-card-chevron { transform: rotate(180deg); }
+
+/* Hidden action buttons behind the card */
+.swipe-actions {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: stretch;
+    z-index: 1;
+    background: transparent;
+}
+.m-action {
+    width: 80px;
+    border: none;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 8px;
+    -webkit-tap-highlight-color: transparent;
+    transition: filter 0.15s;
+    min-height: 88px;
+}
+.m-action:active { filter: brightness(0.85); }
+.m-action .m-action-icon { font-size: 20px; line-height: 1; }
+.m-action .m-action-label { font-size: 10px; line-height: 1; text-transform: uppercase; letter-spacing: 0.3px; }
+.m-action-edit { background: #2563eb; }
+.m-action-barcode { background: #6366f1; }
+.m-action-invoice { background: #0891b2; }
+.m-action-email { background: #16a34a; }
+.m-action-stock { background: #ea580c; }
+.m-action-delete { background: #dc2626; }
+
+/* ════════════════════════════════════════════════════════════════════
+   FLOATING ACTION BUTTON (FAB)
+   ════════════════════════════════════════════════════════════════════ */
+.admin-fab {
+    position: fixed;
+    right: 18px;
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #111, #2a2a2a);
+    color: #fff;
+    border: none;
+    font-size: 26px;
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.32), 0 2px 6px rgba(0,0,0,0.18);
+    z-index: 8100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.admin-fab:active { transform: scale(0.92); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+/* ════════════════════════════════════════════════════════════════════
+   PULL-TO-REFRESH indicator
+   ════════════════════════════════════════════════════════════════════ */
+.mobile-pull-refresh {
+    position: absolute;
+    top: -56px; left: 50%;
+    transform: translateX(-50%);
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    z-index: 8500;
+    transition: transform 0.2s, opacity 0.2s;
+}
+.mobile-pull-refresh.spinning { animation: mpr-spin 0.8s linear infinite; }
+@keyframes mpr-spin { from { transform: translateX(-50%) rotate(0deg); } to { transform: translateX(-50%) rotate(360deg); } }
+
+/* ════════════════════════════════════════════════════════════════════
+   ENHANCED BOTTOM-SHEET MODALS  (with drag handle + swipe-down-to-dismiss)
+   ════════════════════════════════════════════════════════════════════ */
+.m-sheet-handle {
+    width: 40px; height: 4px;
+    background: #d4d4d4;
+    border-radius: 2px;
+    margin: 0 auto 14px;
+    cursor: grab;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+.m-sheet-handle:active { background: #a3a3a3; cursor: grabbing; }
+
+/* ════════════════════════════════════════════════════════════════════
+   MOBILE BREAKPOINT (<=768px) — REVEAL all the mobile-only chrome
+   ════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Show mobile cards, hide desktop tables inside admin sections */
+    .admin-section .admin-table-container.with-mobile-cards {
+        display: none !important;
+    }
+    .mobile-cards-container {
+        display: block !important;
+        padding: 0 0 80px 0 !important; /* space for FAB */
+    }
+
+    /* FAB visible */
+    .admin-fab { display: flex !important; }
+
+    /* Pull-to-refresh visible only inside admin main */
+    .admin-main { position: relative; }
+    .mobile-pull-refresh { display: flex; }
+
+    /* Stat cards: bigger, more legible */
+    .admin-stat-card {
+        padding: 14px !important;
+        border-radius: 14px !important;
+    }
+    .admin-stat-value { font-size: 22px !important; }
+    .admin-stat-label { font-size: 10px !important; }
+    .admin-stat-sub { font-size: 11px !important; }
+
+    /* Section header: hide the inline Add button (FAB takes over) */
+    .admin-section .admin-page-header > .admin-btn,
+    .admin-section .admin-page-header > div > .admin-btn {
+        display: none !important;
+    }
+
+    /* Search row: full-width, icon-prefixed */
+    .admin-section .admin-page-header + div > .admin-form-control,
+    .admin-section .admin-table-header .admin-form-control {
+        display: none;
+    }
+
+    /* Inner modal becomes a true bottom sheet */
+    .admin-inner-modal {
+        align-items: flex-end !important;
+        padding: 0 !important;
+    }
+    .admin-inner-modal-box {
+        border-radius: 22px 22px 0 0 !important;
+        max-height: 92vh !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 8px 18px calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+        animation: m-sheet-up 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
+    }
+    @keyframes m-sheet-up {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
+    .admin-inner-modal-box .m-sheet-handle { display: block !important; }
+
+    /* Modal header sticky-ish for long forms */
+    .admin-inner-modal-box .admin-modal-header {
+        position: sticky; top: 0; background: #fff;
+        z-index: 5; padding-top: 4px;
+    }
+
+    /* Forms: 16px font everywhere + bigger gaps */
+    .admin-form-control {
+        font-size: 16px !important;
+        padding: 13px 14px !important;
+        border-radius: 10px !important;
+    }
+    .admin-form-group label {
+        font-size: 12px !important;
+        margin-bottom: 6px !important;
+    }
+
+    /* Buttons in modals: bigger touch area */
+    .admin-inner-modal-box .admin-btn,
+    .admin-inner-modal-box .admin-btn-primary {
+        padding: 14px 18px !important;
+        font-size: 15px !important;
+        min-height: 48px;
+    }
+
+    /* Login modal: also a bottom sheet on mobile */
+    .admin-modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+    .admin-login-box {
+        border-radius: 22px 22px 0 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 24px 18px calc(28px + env(safe-area-inset-bottom, 0px)) !important;
+        animation: m-sheet-up 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .admin-input { font-size: 16px !important; padding: 13px 14px !important; }
+    .admin-btn-primary { min-height: 48px; font-size: 16px !important; }
+
+    /* Toast: positioned to avoid keyboard */
+    .admin-toast {
+        top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+        bottom: auto !important;
+        left: 50% !important; right: auto !important;
+        transform: translateX(-50%) translateY(-100px) !important;
+        width: calc(100vw - 24px) !important;
+        max-width: 480px !important;
+        text-align: center !important;
+    }
+    .admin-toast.show { transform: translateX(-50%) translateY(0) !important; }
+
+    /* Delete-confirm becomes a bottom sheet too */
+    .delete-confirm-overlay { align-items: flex-end !important; padding: 0 !important; }
+    .delete-confirm-box {
+        border-radius: 22px 22px 0 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 28px 22px calc(28px + env(safe-area-inset-bottom, 0px)) !important;
+        animation: m-sheet-up 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .delete-confirm-btns button { min-height: 48px !important; font-size: 15px !important; }
+
+    /* Sidebar (top tab bar on mobile): respect safe-area-inset-top */
+    .admin-sidebar {
+        padding-top: env(safe-area-inset-top, 0px) !important;
+        height: calc(56px + env(safe-area-inset-top, 0px)) !important;
+    }
+    .admin-main {
+        height: calc(100dvh - 56px - env(safe-area-inset-top, 0px)) !important;
+        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    /* Product modal image preview: bigger, easier to tap */
+    .admin-inner-modal-box img[style*="border-radius:8px"] {
+        width: 56px !important; height: 56px !important;
+    }
+
+    /* Nav tabs: slightly larger icons for thumb tapping */
+    .admin-nav-item {
+        min-width: 60px !important;
+        padding: 6px 12px !important;
+    }
+    .admin-nav-item .nav-icon { font-size: 18px !important; }
+
+    /* Tables that DON'T have mobile-cards fallback: make horizontal scroll nicer */
+    .admin-table-container:not(.with-mobile-cards) {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   TABLET BREAKPOINT (<=1024px) — slightly relaxed for tablets
+   ════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .mobile-cards-container { display: none !important; }
+    .admin-section .admin-table-container.with-mobile-cards { display: block !important; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .swipe-card-content,
+    .admin-inner-modal-box,
+    .admin-login-box,
+    .delete-confirm-box { transition: none !important; animation: none !important; }
+    .mobile-pull-refresh.spinning { animation: none !important; }
+}
+
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -2485,6 +2963,14 @@
             <button class="order-form-close" onclick="closeCustomerModal()" aria-label="Close">✕</button>
             <h3>🛒 Complete Your Order</h3>
             <div class="form-subtitle" id="cmSummary">—</div>
+
+            <!-- ✅ FIX: Saved address picker - shown only when user has saved addresses -->
+            <div id="cm_saved_addr_row" class="form-row" style="display:none;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin-bottom:4px;">
+                <label style="font-weight:600;margin-bottom:8px;display:block;">📍 Use a saved address</label>
+                <select id="cm_addr_select" onchange="applySelectedAddress()" style="width:100%;padding:10px 12px;border:1px solid #bfdbfe;border-radius:8px;font-size:14px;background:#fff;cursor:pointer;">
+                    <option value="">— Select a saved address —</option>
+                </select>
+            </div>
 
             <div class="form-row">
                 <label>Full Name *</label>
@@ -4229,37 +4715,6 @@
             const ctx = _paymentContext;
             // Guard: if no payment context (e.g. cart was emptied during login), bail gracefully
             if (!ctx) { showToast('Your session timed out. Please select a product and try again.', 'error'); return; }
-            // ✅ FIX: Prefill from saved addresses if logged in (check both storages)
-            var sessRaw = localStorage.getItem('vynox_session') || sessionStorage.getItem('vynox_session');
-            var sess = safeParseJSON(sessRaw, null);
-            if (sess && sess.email) {
-                var addrs = getSavedAddresses(sess.email);
-                var lastAddr = addrs.length > 0 ? addrs[addrs.length - 1] : null;
-                // Clear first, then immediately fill — no race condition
-                setTimeout(function(){
-                    var fnEl = document.getElementById('cm_fullname');
-                    var phEl = document.getElementById('cm_phone');
-                    var emEl = document.getElementById('cm_email');
-                    var a1El = document.getElementById('cm_address1');
-                    var a2El = document.getElementById('cm_address2');
-                    var ciEl = document.getElementById('cm_city');
-                    var stEl = document.getElementById('cm_state');
-                    var pcEl = document.getElementById('cm_pincode');
-                    var coEl = document.getElementById('cm_country');
-                    if (lastAddr) {
-                        if (fnEl) fnEl.value = lastAddr.fullName || '';
-                        if (phEl) phEl.value = lastAddr.phone || '';
-                        if (a1El) a1El.value = lastAddr.line1 || '';
-                        if (a2El) a2El.value = lastAddr.line2 || '';
-                        if (ciEl) ciEl.value = lastAddr.city || '';
-                        if (stEl) stEl.value = lastAddr.state || '';
-                        if (pcEl) pcEl.value = lastAddr.pinCode || '';
-                        if (coEl) coEl.value = lastAddr.country || 'India';
-                    }
-                    // Always autofill email from session if available
-                    if (emEl && !emEl.value && sess.email) emEl.value = sess.email;
-                }, 50);
-            }
             // ✅ FIX #1: ensure baseAmount is set for buy_now too
             if (ctx.type === 'buy_now' && ctx.baseAmount === undefined) {
                 ctx.baseAmount = ctx.amount;
@@ -4271,17 +4726,79 @@
             ctx.shippingFee = 0;
             ctx.amount = ctx.baseAmount;
             onPaymentMethodChange();
-            // Clear previous values & errors
-            ['cm_fullname','cm_phone','cm_email','cm_address1','cm_address2','cm_city','cm_state','cm_pincode','cm_country'].forEach(id => {
+            // ✅ BUG FIX: Clear fields FIRST (synchronously), THEN fill from saved
+            //    address. The old code did this in reverse order: a setTimeout(fill, 50ms)
+            //    fired, but was immediately cancelled by the synchronous clear below it.
+            //    Result: saved address was always wiped. Now: clear → fill → show.
+            ['cm_fullname','cm_phone','cm_email','cm_address1','cm_address2','cm_city','cm_state','cm_pincode','cm_country'].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el && id !== 'cm_country') el.value = '';
                 else if (el && id === 'cm_country') el.value = 'India';
             });
-            ['err_phone','err_address','err_city','err_state','err_pincode'].forEach(id => {
+            ['err_phone','err_address','err_city','err_state','err_pincode'].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el) el.style.display = 'none';
             });
+            // ✅ Populate saved-address dropdown + prefill the last-used address
+            var sessRaw = localStorage.getItem('vynox_session') || sessionStorage.getItem('vynox_session');
+            var sess = safeParseJSON(sessRaw, null);
+            var cm_saved_addr_row = document.getElementById('cm_saved_addr_row');
+            var cm_addr_select    = document.getElementById('cm_addr_select');
+            if (sess && sess.email) {
+                var addrs = getSavedAddresses(sess.email);
+                if (addrs.length > 0 && cm_saved_addr_row && cm_addr_select) {
+                    // Build dropdown options
+                    cm_addr_select.innerHTML = '<option value="">— Select a saved address —</option>';
+                    addrs.forEach(function(a, i) {
+                        var label = (a.fullName || 'Address') + ' — ' + (a.line1 || '') + ', ' + (a.city || '') + ' ' + (a.pinCode || '');
+                        var opt = document.createElement('option');
+                        opt.value = String(i);
+                        opt.textContent = label;
+                        cm_addr_select.appendChild(opt);
+                    });
+                    cm_saved_addr_row.style.display = 'block';
+                    // Auto-select and fill the most recently saved address
+                    var lastIdx = addrs.length - 1;
+                    cm_addr_select.value = String(lastIdx);
+                    var lastAddr = addrs[lastIdx];
+                    document.getElementById('cm_fullname').value  = lastAddr.fullName || '';
+                    document.getElementById('cm_phone').value     = lastAddr.phone    || '';
+                    document.getElementById('cm_address1').value  = lastAddr.line1    || '';
+                    document.getElementById('cm_address2').value  = lastAddr.line2    || '';
+                    document.getElementById('cm_city').value      = lastAddr.city     || '';
+                    document.getElementById('cm_state').value     = lastAddr.state    || '';
+                    document.getElementById('cm_pincode').value   = lastAddr.pinCode  || '';
+                    document.getElementById('cm_country').value   = lastAddr.country  || 'India';
+                } else {
+                    if (cm_saved_addr_row) cm_saved_addr_row.style.display = 'none';
+                }
+                // Always autofill email from session
+                var emEl = document.getElementById('cm_email');
+                if (emEl && !emEl.value && sess.email) emEl.value = sess.email;
+            } else {
+                if (cm_saved_addr_row) cm_saved_addr_row.style.display = 'none';
+            }
             document.getElementById('orderFormOverlay').classList.add('open');
+        }
+
+        // ✅ FIX: applySelectedAddress - fills form fields when user picks a saved address
+        function applySelectedAddress() {
+            var sel = document.getElementById('cm_addr_select');
+            if (!sel || sel.value === '') return;
+            var sessRaw = localStorage.getItem('vynox_session') || sessionStorage.getItem('vynox_session');
+            var sess = safeParseJSON(sessRaw, null);
+            if (!sess || !sess.email) return;
+            var addrs = getSavedAddresses(sess.email);
+            var a = addrs[parseInt(sel.value, 10)];
+            if (!a) return;
+            document.getElementById('cm_fullname').value  = a.fullName || '';
+            document.getElementById('cm_phone').value     = a.phone    || '';
+            document.getElementById('cm_address1').value  = a.line1    || '';
+            document.getElementById('cm_address2').value  = a.line2    || '';
+            document.getElementById('cm_city').value      = a.city     || '';
+            document.getElementById('cm_state').value     = a.state    || '';
+            document.getElementById('cm_pincode').value   = a.pinCode  || '';
+            document.getElementById('cm_country').value   = a.country  || 'India';
         }
 
         function closeCustomerModal() {
@@ -5990,7 +6507,7 @@
 
 
     <div id="adminLoginModal" class="admin-modal-overlay" style="display:none;">
-        <div class="admin-login-box">
+        <div class="admin-login-box"><div class="m-sheet-handle" aria-hidden="true"></div>
             <h2>Vynox Admin</h2>
             <p>Sign in to manage your store</p>
             <div id="adminLoginError" class="admin-login-error">❌ Wrong credentials. Try again.</div>
@@ -6033,6 +6550,9 @@
             </div>
         </div>
         <div class="admin-main">
+            <!-- ✅ Mobile UX: pull-to-refresh + FAB -->
+            <div class="mobile-pull-refresh" id="adminPullRefresh">⬇</div>
+            <button class="admin-fab" id="adminFab" aria-label="Add">+</button>
 
             <!-- ✅ FIX #3: Demo-mode banner — shown only when VYN_BACKEND_BASE_URL is empty -->
             <div id="adminDemoBanner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;color:#92400e;padding:12px 18px;border-radius:10px;margin-bottom:18px;font-size:13px;line-height:1.5;">
@@ -6065,10 +6585,11 @@
                     <button class="admin-btn btn-dark" onclick="openAddProductModal()">+ Add Product</button>
                 </div>
                 <div style="margin-bottom:16px;"><input type="text" class="admin-form-control" placeholder="🔍 Search..." oninput="filterAdminProducts(this.value)" style="max-width:320px;"></div>
-                <div class="admin-table-container">
+                <div class="admin-table-container with-mobile-cards">
                     <table class="admin-table"><thead><tr><th>SKU</th><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody id="adminProductsTable"></tbody></table>
                 </div>
+                <div class="mobile-cards-container" id="adminProductsCards" aria-label="Products list"></div>
             </div>
 
             <div id="adminBilling" class="admin-section">
@@ -6128,11 +6649,12 @@
                     <div class="admin-stat-card orange"><div class="admin-stat-label">Low Stock</div><div class="admin-stat-value" id="invLowStock">0</div></div>
                     <div class="admin-stat-card red"><div class="admin-stat-label">Out of Stock</div><div class="admin-stat-value" id="invOutStock">0</div></div>
                 </div>
-                <div class="admin-table-container">
+                <div class="admin-table-container with-mobile-cards">
                     <div class="admin-table-header"><div class="admin-table-title">All Stock</div><input type="text" class="admin-form-control" placeholder="🔍 Search..." oninput="filterInventory(this.value)" style="max-width:220px;padding:7px 12px;font-size:13px;"></div>
                     <table class="admin-table"><thead><tr><th>Product</th><th>Category</th><th>SKU</th><th>Stock</th><th>Status</th><th>Update</th></tr></thead>
                     <tbody id="inventoryTable"></tbody></table>
                 </div>
+                <div class="mobile-cards-container" id="adminInventoryCards" aria-label="Inventory list"></div>
             </div>
 
             <div id="adminReports" class="admin-section">
@@ -6165,10 +6687,11 @@
                 </div>
                 <!-- ✅ Low-stock banner -->
                 <div class="low-stock-banner" id="lowStockBanner" style="display:none;">⚠️ <span id="lowStockMsg"></span></div>
-                <div class="admin-table-container">
+                <div class="admin-table-container with-mobile-cards">
                     <table class="admin-table"><thead><tr><th>ID</th><th>Customer</th><th>Products</th><th>Amount</th><th>Status</th><th>Type</th><th>Payment</th><th>Date</th><th>Actions</th></tr></thead>
                     <tbody id="allOrdersTable"><tr><td colspan="9" style="text-align:center;color:#bbb;padding:28px;">No orders yet</td></tr></tbody></table>
                 </div>
+                <div class="mobile-cards-container" id="adminOrdersCards" aria-label="Orders list"></div>
             </div>
 
             <!-- ✅ CUSTOMER CRM (basic) -->
@@ -6407,7 +6930,7 @@
 
     <!-- PRODUCT MODAL -->
     <div id="adminProductModal" class="admin-inner-modal" style="display:none;">
-        <div class="admin-inner-modal-box">
+        <div class="admin-inner-modal-box"><div class="m-sheet-handle" aria-hidden="true"></div>
             <div class="admin-modal-header"><div class="admin-modal-title" id="productModalTitle">Add Product</div><button class="admin-modal-close" onclick="closeProductModal()">✕</button></div>
             <div class="admin-form-grid">
                 <div class="admin-form-group"><label>Product Name *</label><input type="text" class="admin-form-control" id="pmName" placeholder="e.g. Oxford Formal Shirt"></div>
@@ -6458,7 +6981,7 @@
 
     <!-- COUPON MODAL -->
     <div id="adminCouponModal" class="admin-inner-modal" style="display:none;">
-        <div class="admin-inner-modal-box" style="max-width:500px;">
+        <div class="admin-inner-modal-box" style="max-width:500px;"><div class="m-sheet-handle" aria-hidden="true"></div>
             <div class="admin-modal-header"><div class="admin-modal-title" id="couponModalTitle">Add Coupon</div><button class="admin-modal-close" onclick="closeCouponModal()">✕</button></div>
             <div class="admin-form-grid">
                 <div class="admin-form-group"><label>Coupon Code *</label><input type="text" class="admin-form-control" id="cpCode" placeholder="e.g. SAVE20" oninput="this.value=this.value.toUpperCase()"></div>
@@ -6489,7 +7012,7 @@
 
     <!-- BARCODE MODAL -->
     <div id="barcodeModal" class="admin-inner-modal" style="display:none;">
-        <div class="admin-inner-modal-box" style="max-width:400px;">
+        <div class="admin-inner-modal-box" style="max-width:400px;"><div class="m-sheet-handle" aria-hidden="true"></div>
             <div class="admin-modal-header"><div class="admin-modal-title">🏷️ Product Barcode</div><button class="admin-modal-close" onclick="document.getElementById('barcodeModal').style.display='none'">✕</button></div>
             <div id="barcodeProductInfo" style="font-size:14px;color:#555;margin-bottom:12px;"></div>
             <div class="barcode-container"><svg id="barcodeDisplay"></svg></div>
@@ -6500,7 +7023,7 @@
 
     <!-- PAYMENT MODAL -->
     <div id="paymentModal" class="admin-inner-modal" style="display:none;">
-        <div class="admin-inner-modal-box" style="max-width:400px;">
+        <div class="admin-inner-modal-box" style="max-width:400px;"><div class="m-sheet-handle" aria-hidden="true"></div>
             <div class="admin-modal-header"><div class="admin-modal-title">💳 Process Payment</div><button class="admin-modal-close" onclick="document.getElementById('paymentModal').style.display='none'">✕</button></div>
             <div style="font-size:32px;font-weight:700;text-align:center;margin:14px 0;" id="paymentTotalDisplay">₹0</div>
             <div style="margin-bottom:16px;">
@@ -6522,7 +7045,7 @@
 
     <!-- INVOICE MODAL -->
     <div id="invoiceModal" class="admin-inner-modal" style="display:none;">
-        <div class="admin-inner-modal-box" style="max-width:560px;">
+        <div class="admin-inner-modal-box" style="max-width:560px;"><div class="m-sheet-handle" aria-hidden="true"></div>
             <div id="invoicePrintArea">
                 <div class="invoice-header">
                     <div class="invoice-brand">VYNOX MENSWEAR</div>
@@ -6543,7 +7066,7 @@
 
     <!-- CAMERA MODAL -->
     <div id="cameraScannerModal" class="admin-inner-modal" style="display:none;">
-        <div class="admin-inner-modal-box" style="max-width:420px;">
+        <div class="admin-inner-modal-box" style="max-width:420px;"><div class="m-sheet-handle" aria-hidden="true"></div>
             <div class="admin-modal-header">
                 <div class="admin-modal-title">📷 Camera Scanner</div>
                 <button class="admin-modal-close" onclick="closeCameraScanner()">✕</button>
@@ -8453,12 +8976,591 @@ function applyDrawerFilters() {
         });
     }
 })();
+
+/* ════════════════════════════════════════════════════════════════════
+   VYNOX ADMIN — 200% MOBILE UX RUNTIME
+   ════════════════════════════════════════════════════════════════════ */
+
+(function() {
+    'use strict';
+
+    // ─── Helpers ────────────────────────────────────────────────────
+    function isMobile() {
+        return window.matchMedia('(max-width: 768px)').matches;
+    }
+    function vibrate(ms) {
+        try { if (navigator.vibrate) navigator.vibrate(ms); } catch(e) {}
+    }
+    function escapeHtmlSafe(s) {
+        if (s === null || s === undefined) return '';
+        return String(s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+    function escapeAttrSafe(s) {
+        return escapeHtmlSafe(s).replace(/`/g, '&#96;');
+    }
+
+    // ─── 1. SWIPE-TO-REVEAL GESTURE HANDLER ─────────────────────────
+    var SWIPE_THRESHOLD = 50;          // px past which we commit open/close
+    var SWIPE_REVEAL_WIDTH = 160;      // px of action area revealed
+    var ACTIVE_CARD = null;            // currently open card
+
+    function attachSwipe(card) {
+        if (card.__swipeAttached) return;
+        card.__swipeAttached = true;
+
+        var content = card.querySelector('.swipe-card-content');
+        if (!content) return;
+
+        var startX = 0, startY = 0;
+        var currentDX = 0;
+        var dragging = false;
+        var opened = card.classList.contains('open');
+        var isPotentialSwipe = false;
+        var directionLocked = false;
+        var isHorizontalSwipe = false;
+
+        function lockOpen() {
+            card.classList.add('open');
+            content.style.transform = '';
+            opened = true;
+            ACTIVE_CARD = card;
+        }
+        function lockClose() {
+            card.classList.remove('open');
+            content.style.transform = '';
+            opened = false;
+            if (ACTIVE_CARD === card) ACTIVE_CARD = null;
+        }
+
+        function onPointerDown(e) {
+            if (e.button && e.button !== 0) return;
+            if (e.isComposing) return;
+            var tag = (e.target.tagName || '').toLowerCase();
+            if (tag === 'input' || tag === 'select' || tag === 'textarea' || tag === 'button') return;
+            if (e.target.closest('.m-action')) return;
+
+            startX = e.clientX;
+            startY = e.clientY;
+            currentDX = 0;
+            dragging = true;
+            isPotentialSwipe = true;
+            directionLocked = false;
+            isHorizontalSwipe = false;
+            content.classList.add('swiping');
+        }
+
+        function onPointerMove(e) {
+            if (!dragging) return;
+            var dx = e.clientX - startX;
+            var dy = e.clientY - startY;
+
+            if (!directionLocked) {
+                if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+                    directionLocked = true;
+                    isHorizontalSwipe = Math.abs(dx) > Math.abs(dy);
+                    if (!isHorizontalSwipe) {
+                        dragging = false;
+                        isPotentialSwipe = false;
+                        content.classList.remove('swiping');
+                        return;
+                    }
+                }
+            }
+
+            if (isHorizontalSwipe) {
+                if (e.cancelable) e.preventDefault();
+
+                var translate;
+                if (opened) {
+                    translate = Math.min(0, Math.max(-SWIPE_REVEAL_WIDTH - 20, -SWIPE_REVEAL_WIDTH + dx));
+                } else {
+                    translate = Math.max(-SWIPE_REVEAL_WIDTH - 20, Math.min(20, dx));
+                }
+                currentDX = translate;
+                content.style.transform = 'translateX(' + translate + 'px)';
+            }
+        }
+
+        function onPointerUp(e) {
+            if (!dragging && !isPotentialSwipe) return;
+            content.classList.remove('swiping');
+
+            if (isHorizontalSwipe) {
+                var dx = currentDX;
+                if (opened) {
+                    if (dx > -SWIPE_REVEAL_WIDTH + 60) {
+                        lockClose();
+                    } else {
+                        lockOpen();
+                    }
+                } else {
+                    if (dx < -SWIPE_THRESHOLD) {
+                        lockOpen();
+                        vibrate(8);
+                    } else {
+                        lockClose();
+                    }
+                }
+            } else if (isPotentialSwipe && !directionLocked) {
+                handleTap(e);
+            }
+
+            dragging = false;
+            isPotentialSwipe = false;
+            directionLocked = false;
+            isHorizontalSwipe = false;
+            currentDX = 0;
+        }
+
+        function handleTap(e) {
+            if (opened) {
+                lockClose();
+                return;
+            }
+            var onTap = card.getAttribute('data-on-tap');
+            if (onTap) {
+                try {
+                    new Function(onTap).call(card);
+                } catch (err) {
+                    console.warn('Card tap handler failed:', err);
+                }
+            }
+        }
+
+        content.addEventListener('pointerdown', onPointerDown, { passive: true });
+        content.addEventListener('pointermove', onPointerMove, { passive: false });
+        content.addEventListener('pointerup', onPointerUp, { passive: true });
+        content.addEventListener('pointercancel', onPointerUp, { passive: true });
+        content.addEventListener('click', function(e) {
+            if (isHorizontalSwipe) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, true);
+
+        card.querySelectorAll('.m-action').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                vibrate(5);
+                lockClose();
+            }, { passive: true });
+        });
+    }
+
+    function attachAllSwipes() {
+        document.querySelectorAll('.swipe-card').forEach(attachSwipe);
+    }
+
+    // Close any open card when tapping outside
+    document.addEventListener('pointerdown', function(e) {
+        if (!ACTIVE_CARD) return;
+        if (!e.target.closest('.swipe-card')) {
+            var content = ACTIVE_CARD.querySelector('.swipe-card-content');
+            if (content) {
+                ACTIVE_CARD.classList.remove('open');
+                content.style.transform = '';
+            }
+            ACTIVE_CARD = null;
+        }
+    }, { passive: true });
+
+    // ─── 2. MOBILE PRODUCT CARDS ────────────────────────────────────
+    function renderMobileProducts(prods) {
+        var container = document.getElementById('adminProductsCards');
+        if (!container) return;
+        if (!prods.length) {
+            container.innerHTML = '<div style="text-align:center;color:#bbb;padding:36px 16px;font-size:14px;">No products yet.<br><span style="font-size:12px;color:#ccc;">Tap the + button to add your first product.</span></div>';
+            return;
+        }
+        container.innerHTML = prods.map(function(p) {
+            var st = p.stock || 0;
+            var stBadge = st > 10 ? 'badge-green' : st > 0 ? 'badge-orange' : 'badge-red';
+            var stText = st > 10 ? 'In Stock' : st > 0 ? 'Low Stock' : 'Out';
+            var imgHtml = p.image
+                ? '<img src="' + escapeAttrSafe(p.image) + '" class="swipe-card-thumb" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';"><div class="swipe-card-thumb-placeholder" style="display:none;">👕</div>'
+                : '<div class="swipe-card-thumb-placeholder">👕</div>';
+            var id = escapeAttrSafe(p.id);
+
+            return '<div class="swipe-card" data-on-tap="editProduct(\'' + id + '\')" role="button" tabindex="0" aria-label="Edit ' + escapeAttrSafe(p.name) + '">' +
+                '<div class="swipe-card-content">' +
+                    imgHtml +
+                    '<div class="swipe-card-body">' +
+                        '<div class="swipe-card-row1">' +
+                            '<div class="swipe-card-title">' + escapeHtmlSafe(p.name) + '</div>' +
+                            '<div class="swipe-card-price">₹' + (p.price || 0).toLocaleString('en-IN') + '</div>' +
+                        '</div>' +
+                        '<div class="swipe-card-sub">' + escapeHtmlSafe(p.brand || 'Vynox') + ' · ' + escapeHtmlSafe(p.sku || p.id) + '</div>' +
+                        '<div class="swipe-card-meta">' +
+                            '<span class="badge badge-gray">' + escapeHtmlSafe((p.category || '').charAt(0).toUpperCase() + (p.category || '').slice(1)) + '</span>' +
+                            '<span class="badge ' + stBadge + '">' + stText + ': ' + st + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<span class="swipe-card-chevron">‹</span>' +
+                '</div>' +
+                '<div class="swipe-actions">' +
+                    '<button class="m-action m-action-barcode" onclick="openBarcodeModal(\'' + id + '\')" aria-label="Barcode"><span class="m-action-icon">🏷️</span><span class="m-action-label">Barcode</span></button>' +
+                    '<button class="m-action m-action-edit" onclick="editProduct(\'' + id + '\')" aria-label="Edit"><span class="m-action-icon">✏️</span><span class="m-action-label">Edit</span></button>' +
+                    '<button class="m-action m-action-delete" onclick="deleteProduct(\'' + id + '\')" aria-label="Delete"><span class="m-action-icon">🗑️</span><span class="m-action-label">Delete</span></button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+        attachAllSwipes();
+    }
+
+    // ─── 3. MOBILE INVENTORY CARDS ──────────────────────────────────
+    function renderMobileInventory(prods) {
+        var container = document.getElementById('adminInventoryCards');
+        if (!container) return;
+        if (!prods.length) {
+            container.innerHTML = '<div style="text-align:center;color:#bbb;padding:36px 16px;font-size:14px;">No inventory items.</div>';
+            return;
+        }
+        container.innerHTML = prods.map(function(p) {
+            var st = p.stock || 0;
+            var stBadge = st > 10 ? 'badge-green' : st > 0 ? 'badge-orange' : 'badge-red';
+            var stText = st > 10 ? 'In Stock' : st > 0 ? 'Low' : 'Out';
+            return '<div class="swipe-card" role="button" tabindex="0" aria-label="Adjust stock for ' + escapeAttrSafe(p.name) + '">' +
+                '<div class="swipe-card-content">' +
+                    '<div class="swipe-card-thumb-placeholder">📦</div>' +
+                    '<div class="swipe-card-body">' +
+                        '<div class="swipe-card-row1">' +
+                            '<div class="swipe-card-title">' + escapeHtmlSafe(p.name) + '</div>' +
+                            '<div class="swipe-card-price">' + st + ' <span style="font-size:11px;color:#999;font-weight:400;">units</span></div>' +
+                        '</div>' +
+                        '<div class="swipe-card-sub">' + escapeHtmlSafe(p.sku || p.id) + ' · ' + escapeHtmlSafe((p.category || '').charAt(0).toUpperCase() + (p.category || '').slice(1)) + '</div>' +
+                        '<div class="swipe-card-meta">' +
+                            '<span class="badge ' + stBadge + '">' + stText + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<span class="swipe-card-chevron">‹</span>' +
+                '</div>' +
+                '<div class="swipe-actions">' +
+                    '<button class="m-action m-action-stock" onclick="adjustStock(\'' + escapeAttrSafe(p.id) + '\',10)" aria-label="Add 10"><span class="m-action-icon">+10</span><span class="m-action-label">Restock</span></button>' +
+                    '<button class="m-action m-action-stock" style="background:#16a34a;" onclick="adjustStock(\'' + escapeAttrSafe(p.id) + '\',25)" aria-label="Add 25"><span class="m-action-icon">+25</span><span class="m-action-label">Bulk</span></button>' +
+                    '<button class="m-action m-action-delete" onclick="adjustStock(\'' + escapeAttrSafe(p.id) + '\',-5)" aria-label="Remove 5"><span class="m-action-icon">-5</span><span class="m-action-label">Reduce</span></button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+        attachAllSwipes();
+    }
+
+    // ─── 4. MOBILE ORDER CARDS ──────────────────────────────────────
+    function renderMobileOrders(orders) {
+        var container = document.getElementById('adminOrdersCards');
+        if (!container) return;
+        if (!orders.length) {
+            container.innerHTML = '<div style="text-align:center;color:#bbb;padding:36px 16px;font-size:14px;">No orders yet.</div>';
+            return;
+        }
+        container.innerHTML = orders.slice().reverse().map(function(o) {
+            var st = o.status || 'pending';
+            var addrShort = o.deliveryAddress
+                ? (o.deliveryAddress.line1 + ', ' + o.deliveryAddress.city)
+                : (o.address || '').substring(0, 40);
+            var items = o.items.map(function(i) { return i.name; }).join(', ');
+            var typeBadge = o.type === 'online' ? 'badge-blue' : 'badge-gray';
+            var oid = escapeAttrSafe(o.id);
+
+            return '<div class="swipe-card" role="button" tabindex="0" aria-label="Order ' + escapeAttrSafe(o.id) + '">' +
+                '<div class="swipe-card-content">' +
+                    '<div class="swipe-card-thumb-placeholder">🛒</div>' +
+                    '<div class="swipe-card-body">' +
+                        '<div class="swipe-card-row1">' +
+                            '<div class="swipe-card-title">#' + escapeHtmlSafe(o.id) + ' · ' + escapeHtmlSafe(o.customer || 'Walk-in') + '</div>' +
+                            '<div class="swipe-card-price">₹' + (o.total || 0).toLocaleString('en-IN') + '</div>' +
+                        '</div>' +
+                        '<div class="swipe-card-sub">' + escapeHtmlSafe(items) + (items.length > 50 ? '…' : '') + '</div>' +
+                        '<div class="swipe-card-meta">' +
+                            '<span class="badge ' + typeBadge + '">' + (o.type === 'online' ? 'Online' : 'Counter') + '</span>' +
+                            '<span class="badge order-status-pill s-' + escapeAttrSafe(st) + '">' + escapeHtmlSafe(st) + '</span>' +
+                            '<span style="color:#999;">' + new Date(o.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + '</span>' +
+                        '</div>' +
+                        (addrShort ? '<div class="swipe-card-sub" style="margin-top:4px;">📍 ' + escapeHtmlSafe(addrShort) + '</div>' : '') +
+                    '</div>' +
+                    '<span class="swipe-card-chevron">‹</span>' +
+                '</div>' +
+                '<div class="swipe-actions">' +
+                    '<button class="m-action m-action-invoice" onclick="showInvoice(getOrderById(\'' + oid + '\'))" aria-label="Invoice"><span class="m-action-icon">🧾</span><span class="m-action-label">Invoice</span></button>' +
+                    '<button class="m-action m-action-email" onclick="resendOrderEmail(\'' + oid + '\')" aria-label="Resend email"><span class="m-action-icon">📧</span><span class="m-action-label">Resend</span></button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+        attachAllSwipes();
+    }
+
+    // ─── 5. HOOK INTO EXISTING RENDER FUNCTIONS ─────────────────────
+    var _origRenderAdminProducts = window.renderAdminProducts;
+    var _origRenderInventory = window.renderInventory;
+    var _origRenderOrders = window.renderOrders;
+
+    if (_origRenderAdminProducts) {
+        window.renderAdminProducts = function() {
+            _origRenderAdminProducts.apply(this, arguments);
+            if (isMobile()) {
+                var prods = (typeof getAdminProducts === 'function') ? getAdminProducts() : [];
+                var f = prods.filter(function(p) {
+                    return !adminProdFilter || p.name.toLowerCase().indexOf(adminProdFilter.toLowerCase()) > -1;
+                });
+                renderMobileProducts(f);
+            }
+        };
+    }
+    if (_origRenderInventory) {
+        window.renderInventory = function() {
+            _origRenderInventory.apply(this, arguments);
+            if (isMobile()) {
+                var prods = (typeof getAdminProducts === 'function') ? getAdminProducts() : [];
+                var f = prods.filter(function(p) {
+                    return !invFilter || p.name.toLowerCase().indexOf(invFilter.toLowerCase()) > -1;
+                });
+                renderMobileInventory(f);
+            }
+        };
+    }
+    if (_origRenderOrders) {
+        window.renderOrders = function() {
+            _origRenderOrders.apply(this, arguments);
+            if (isMobile()) {
+                var orders = (typeof getOrders === 'function') ? getOrders() : [];
+                renderMobileOrders(orders);
+            }
+        };
+    }
+
+    // ─── 6. FAB — context-aware Add button ──────────────────────────
+    function updateFab() {
+        var fab = document.getElementById('adminFab');
+        if (!fab) return;
+        var active = document.querySelector('.admin-section.active');
+        if (!active) { fab.style.display = 'none'; return; }
+        var id = active.id;
+        var config = {
+            'adminProducts':   { label: '+', aria: 'Add product',       action: 'openAddProductModal()' },
+            'adminBilling':    { label: '+', aria: 'New bill',          action: 'showAdminSection(\'billing\'); setTimeout(function(){var e=document.getElementById(\'barcodeInput\');if(e)e.focus();},200);' },
+            'adminInventory':  { label: '↻', aria: 'Refresh inventory', action: 'syncFromFirestore(renderInventory); showAdminToast(\'Inventory refreshed ✓\',\'success\');' },
+            'adminCoupons':    { label: '+', aria: 'Add coupon',        action: 'openAddCouponModal()' },
+            'adminOrders':     { label: '⬇', aria: 'Export CSV',        action: 'exportOrdersCSV()' },
+            'adminCustomers':  { label: '⬇', aria: 'Export CSV',        action: 'exportCustomersCSV()' },
+            'adminReports':    { label: '⬇', aria: 'Export CSV',        action: 'exportSalesReport()' }
+        };
+        var c = config[id];
+        if (c) {
+            fab.style.display = 'flex';
+            fab.textContent = c.label;
+            fab.setAttribute('aria-label', c.aria);
+            fab.onclick = function() {
+                vibrate(8);
+                try { new Function(c.action)(); } catch(e) { console.warn('FAB action failed:', e); }
+            };
+        } else {
+            fab.style.display = 'none';
+        }
+    }
+    var _origShowSection = window.showAdminSection;
+    if (_origShowSection) {
+        window.showAdminSection = function() {
+            _origShowSection.apply(this, arguments);
+            setTimeout(updateFab, 50);
+        };
+    }
+    window.addEventListener('DOMContentLoaded', updateFab);
+    window.addEventListener('load', updateFab);
+    window.addEventListener('resize', function() {
+        updateFab();
+        if (isMobile()) {
+            if (window.renderAdminProducts) window.renderAdminProducts();
+            if (window.renderInventory) window.renderInventory();
+            if (window.renderOrders) window.renderOrders();
+        }
+    });
+
+    // ─── 7. PULL-TO-REFRESH on admin-main ───────────────────────────
+    (function() {
+        var adminMain = document.querySelector('.admin-main');
+        var ptr = document.getElementById('adminPullRefresh');
+        if (!adminMain || !ptr) return;
+        var startY = 0, pulling = false, currentY = 0;
+
+        adminMain.addEventListener('touchstart', function(e) {
+            if (adminMain.scrollTop <= 0 && e.touches.length === 1) {
+                startY = e.touches[0].clientY;
+                pulling = true;
+                currentY = 0;
+            } else {
+                pulling = false;
+            }
+        }, { passive: true });
+
+        adminMain.addEventListener('touchmove', function(e) {
+            if (!pulling) return;
+            currentY = e.touches[0].clientY - startY;
+            if (currentY > 0 && currentY < 100) {
+                ptr.style.transform = 'translateX(-50%) translateY(' + (currentY) + 'px)';
+                ptr.style.opacity = Math.min(1, currentY / 60);
+                ptr.textContent = currentY > 60 ? '⬆' : '⬇';
+            }
+        }, { passive: true });
+
+        adminMain.addEventListener('touchend', function() {
+            if (!pulling) return;
+            pulling = false;
+            if (currentY > 60) {
+                ptr.classList.add('spinning');
+                ptr.textContent = '⏳';
+                vibrate(15);
+                setTimeout(function() {
+                    if (typeof syncFromFirestore === 'function') {
+                        syncFromFirestore(function() {
+                            if (window.renderAdminProducts) window.renderAdminProducts();
+                            if (window.renderInventory) window.renderInventory();
+                            if (window.renderOrders) window.renderOrders();
+                            if (window.refreshDashboard) window.refreshDashboard();
+                            if (typeof showAdminToast === 'function') showAdminToast('Refreshed ✓', 'success');
+                        });
+                    }
+                    setTimeout(function() {
+                        ptr.classList.remove('spinning');
+                        ptr.style.transform = '';
+                        ptr.style.opacity = '';
+                    }, 800);
+                }, 200);
+            } else {
+                ptr.style.transform = '';
+                ptr.style.opacity = '';
+            }
+        }, { passive: true });
+    })();
+
+    // ─── 8. SWIPE-DOWN-TO-DISMISS for bottom-sheet modals ───────────
+    function attachSheetDrag(sheet) {
+        if (sheet.__sheetDragAttached) return;
+        sheet.__sheetDragAttached = true;
+
+        var handle = sheet.querySelector('.m-sheet-handle');
+        if (!handle) return;
+
+        var startY = 0, currentY = 0, dragging = false;
+
+        handle.addEventListener('touchstart', function(e) {
+            startY = e.touches[0].clientY;
+            dragging = true;
+            sheet.style.transition = 'none';
+        }, { passive: true });
+
+        handle.addEventListener('touchmove', function(e) {
+            if (!dragging) return;
+            currentY = e.touches[0].clientY - startY;
+            if (currentY > 0) {
+                sheet.style.transform = 'translateY(' + currentY + 'px)';
+                sheet.style.opacity = String(1 - Math.min(0.5, currentY / 600));
+            }
+        }, { passive: true });
+
+        handle.addEventListener('touchend', function() {
+            if (!dragging) return;
+            dragging = false;
+            sheet.style.transition = '';
+            if (currentY > 100) {
+                sheet.style.transform = 'translateY(100%)';
+                setTimeout(function() {
+                    var overlay = sheet.closest('.admin-inner-modal, .admin-modal-overlay, .delete-confirm-overlay');
+                    if (!overlay) { sheet.style.transform = ''; sheet.style.opacity = ''; return; }
+                    var closeBtn = overlay.querySelector('[onclick*="closeProductModal"], [onclick*="closeAdminLogin"], [onclick*="closeDeleteConfirm"], [onclick*="closeCoupon"], [onclick*="close"]');
+                    if (closeBtn) {
+                        closeBtn.click();
+                    } else {
+                        overlay.style.display = 'none';
+                    }
+                    sheet.style.transform = '';
+                    sheet.style.opacity = '';
+                }, 220);
+            } else {
+                sheet.style.transform = '';
+                sheet.style.opacity = '';
+            }
+            currentY = 0;
+        }, { passive: true });
+    }
+
+    var modalObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(m) {
+            m.addedNodes.forEach(function(node) {
+                if (node.nodeType !== 1) return;
+                if (node.classList && (node.classList.contains('admin-inner-modal-box') ||
+                                       node.classList.contains('admin-login-box') ||
+                                       node.classList.contains('delete-confirm-box'))) {
+                    attachSheetDrag(node);
+                }
+                if (node.querySelectorAll) {
+                    node.querySelectorAll('.admin-inner-modal-box, .admin-login-box, .delete-confirm-box').forEach(attachSheetDrag);
+                }
+            });
+        });
+    });
+    if (document.body) {
+        modalObserver.observe(document.body, { childList: true, subtree: true });
+    } else {
+        document.addEventListener('DOMContentLoaded', function() {
+            modalObserver.observe(document.body, { childList: true, subtree: true });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.admin-inner-modal-box, .admin-login-box, .delete-confirm-box').forEach(attachSheetDrag);
+    });
+
+    // ─── 9. KEYBOARD accessibility for swipe cards ──────────────────
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && ACTIVE_CARD) {
+            var content = ACTIVE_CARD.querySelector('.swipe-card-content');
+            if (content) { ACTIVE_CARD.classList.remove('open'); content.style.transform = ''; }
+            ACTIVE_CARD = null;
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if ((e.key === 'Enter' || e.key === ' ') && document.activeElement &&
+            document.activeElement.classList.contains('swipe-card')) {
+            e.preventDefault();
+            var card = document.activeElement;
+            if (card.classList.contains('open')) {
+                card.classList.remove('open');
+                var c = card.querySelector('.swipe-card-content');
+                if (c) c.style.transform = '';
+            } else {
+                document.querySelectorAll('.swipe-card.open').forEach(function(other) {
+                    other.classList.remove('open');
+                    var oc = other.querySelector('.swipe-card-content');
+                    if (oc) oc.style.transform = '';
+                });
+                card.classList.add('open');
+                ACTIVE_CARD = card;
+            }
+        }
+    });
+
+    // ─── 10. INITIAL pass: attach swipes when admin first opens ─────
+    var adminPanel = document.getElementById('adminPanel');
+    if (adminPanel) {
+        var adminObserver = new MutationObserver(function() {
+            attachAllSwipes();
+            updateFab();
+        });
+        adminObserver.observe(adminPanel, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+    }
+
+    console.log('%c[Vynox] Mobile Admin UX v2 loaded', 'color:#16a34a;font-weight:bold;font-size:14px;');
+})();
+
 </script>
 
 
     <!-- ✅ Delete Product Confirmation Dialog -->
     <div class="delete-confirm-overlay" id="deleteConfirmOverlay" role="dialog" aria-modal="true" aria-label="Delete confirmation">
-        <div class="delete-confirm-box">
+        <div class="delete-confirm-box"><div class="m-sheet-handle" aria-hidden="true"></div>
             <div style="font-size:40px;margin-bottom:10px;">🗑️</div>
             <h3>Delete Product</h3>
             <p>Are you sure you want to delete <span class="product-name-highlight" id="deleteProductName">this product</span>? This cannot be undone.</p>
