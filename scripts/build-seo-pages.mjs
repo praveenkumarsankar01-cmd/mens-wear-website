@@ -100,10 +100,26 @@ function slugify(s) {
 // Unsplash and Pexels both resize with ?w=
 function resized(url, w) {
     if (!/images\.(unsplash|pexels)\.com/.test(url)) return url;
-    const u = new URL(url);
-    u.searchParams.set('w', String(w));
-    return u.toString();
+    try {
+        const u = new URL(url);
+        u.searchParams.set('w', String(w));
+        return u.toString();
+    } catch { return url; }
 }
+
+// Accept http(s) image URLs only; fix protocol-relative ones ("//host/…")
+function imageUrl(s) {
+    s = String(s || '').trim();
+    if (s.startsWith('//')) s = 'https:' + s;
+    try { const u = new URL(s); return /^https?:$/.test(u.protocol) ? u.toString() : ''; } catch { return ''; }
+}
+
+// JSON for inline <script> blocks: "<" escaped so data can never close the tag
+const inlineJson = o => JSON.stringify(o).replace(/</g, '\\u003c');
+
+// Stable key order, so the saved snapshot only changes when the data does
+const canonical = v => Array.isArray(v) ? v.map(canonical)
+    : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map(k => [k, canonical(v[k])])) : v;
 
 function truncate(text, max) {
     if (text.length <= max) return text;
@@ -120,11 +136,12 @@ function categoryKey(c, name) {
     c = String(c || '').toLowerCase().trim();
     if (c === 'kurta' || c === 'kurtas') return 'ethnic';
     if (CATEGORIES[c]) return c;
-    // No category set in the admin panel — infer one from the product name
+    // No (or an unknown) category set in the admin panel — infer one from the product
+    // name. Keep in step with storeCategory() in index.html.
     const n = String(name || '').toLowerCase();
-    if (/kurta|sherwani|bandhgala|jodhpuri|ethnic|nehru/.test(n)) return 'ethnic';
-    if (/jacket|hoodie|sweater|sweatshirt|coat|thermal/.test(n)) return 'winter';
-    if (/t-shirt|tee|jeans|chino|jogger|cargo|polo|shorts/.test(n)) return 'casual';
+    if (/\b(kurtas?|sherwanis?|bandhgala|jodhpuri|ethnic|nehru)\b/.test(n)) return 'ethnic';
+    if (/\b(jackets?|hoodies?|sweaters?|sweatshirts?|coats?|thermals?|puffer)\b/.test(n)) return 'winter';
+    if (/\b(t-shirts?|tees?|jeans|chinos?|joggers?|cargo|polos?|shorts)\b/.test(n)) return 'casual';
     return 'formal';
 }
 
@@ -148,7 +165,7 @@ async function loadProducts() {
             const list = fromFirestoreValue(doc.fields.list);
             if (!Array.isArray(list) || !list.length) throw new Error('empty product list');
             mkdirSync(dirname(snapshot), { recursive: true });
-            writeFileSync(snapshot, JSON.stringify(list, null, 2) + '\n');
+            writeFileSync(snapshot, JSON.stringify(canonical(list), null, 2) + '\n');
             console.log(`Fetched ${list.length} live products from Firestore.`);
             return list;
         } catch (e) {
@@ -162,8 +179,8 @@ async function loadProducts() {
 function normalise(raw) {
     const price = Number(raw.price) || 0;
     const mrp = Number(raw.originalPrice) || 0;
-    const image = String(raw.image || '').trim();
-    const images = [...new Set([image, ...(Array.isArray(raw.images) ? raw.images : [])].map(s => String(s || '').trim()).filter(Boolean))];
+    const images = [...new Set([raw.image, ...(Array.isArray(raw.images) ? raw.images : [])].map(imageUrl).filter(Boolean))];
+    const image = images[0] || '';
     const p = {
         id: String(raw.id),
         name: String(raw.name || '').trim(),
@@ -177,7 +194,7 @@ function normalise(raw) {
         stock: raw.stock === undefined || raw.stock === null ? null : Number(raw.stock),
         sku: String(raw.sku || ('VYN-' + raw.id)),
     };
-    p.slug = `${slugify(p.name)}-${slugify(p.id)}`;
+    p.slug = SLUGS[p.id] || `${slugify(p.name) || 'product'}-${slugify(p.id) || 'item'}`;
     p.path = `/products/${p.slug}/`;
     p.url = SITE + p.path;
     p.inStock = p.stock === null || p.stock > 0;
@@ -207,7 +224,9 @@ function policyContent(id) {
         .replace(/<button class="policy-back-btn"[\s\S]*?<\/button>/g, '')
         .replace(/<button onclick="resetCookieConsent\(\)"[^>]*>([\s\S]*?)<\/button>/g,
             '<a class="btn secondary" href="/?cookies=1">$1</a>')
-        .replace(/<h2>/, '<h1>').replace(/<\/h2>/, '</h1>');
+        .replace(/<h2>/, '<h1>').replace(/<\/h2>/, '</h1>')
+        .replace(/<(\/?)h3>/g, '<$1h2>')
+        .replace(/<(\/?)h4>/g, '<$1h3>');
     const subtitle = (inner.match(/<p class="policy-subtitle">([\s\S]*?)<\/p>/) || [])[1] || '';
     return { html: inner.trim(), subtitle: subtitle.replace(/<[^>]+>/g, '').trim() };
 }
@@ -356,7 +375,8 @@ function productPage(p, related) {
     const paras = paragraphs(p.description);
     const lead = `Buy ${p.name} by ${p.brand} at ${inr(p.price)}${p.mrp ? ` (${p.discount}% off MRP ${inr(p.mrp)})` : ''}.`;
     const perks = ' Free shipping on prepaid orders, COD available, 3-day easy replacement.';
-    const firstSentence = (paras.join(' ').match(/^.*?[.!?](\s|$)/) || [paras[0] || ''])[0].trim();
+    let firstSentence = (paras.join(' ').match(/^.*?[.!?](\s|$)/) || [paras[0] || ''])[0].trim();
+    if (firstSentence && !/[.!?]$/.test(firstSentence)) firstSentence += '.';
     let description = lead + perks;
     if ((lead + ' ' + firstSentence + perks).length <= 160 && firstSentence) description = lead + ' ' + firstSentence + perks;
     description = truncate(description, 160);
@@ -396,6 +416,7 @@ function productPage(p, related) {
                 applicableCountry: 'IN',
                 returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
                 merchantReturnDays: 3,
+                returnPolicyCountry: 'IN',
                 returnMethod: 'https://schema.org/ReturnByMail',
                 itemDefectReturnFees: 'https://schema.org/FreeReturn',
                 merchantReturnLink: SITE + '/return-policy/',
@@ -481,7 +502,7 @@ document.querySelectorAll('.thumbs button').forEach(function (b) {
     document.querySelectorAll('.thumbs button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
   });
 });
-gtag('event', 'view_item', ${JSON.stringify(ga)});
+gtag('event', 'view_item', ${inlineJson(ga)});
 </script>
 `);
 }
@@ -561,6 +582,10 @@ ${html}
 // ───────────────────────── write everything ─────────────────────────
 const manifestPath = join(ROOT, 'data', 'pages-manifest.json');
 const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : {};
+// Product id → URL slug, fixed the first time a product is seen, so renaming a product
+// in Admin never changes (and 404s) a URL Google has already indexed.
+const slugsPath = join(ROOT, 'data', 'product-slugs.json');
+const SLUGS = existsSync(slugsPath) ? JSON.parse(readFileSync(slugsPath, 'utf8')) : {};
 const pages = []; // { path, images? }
 
 function writePage(path, html, images = []) {
@@ -586,6 +611,8 @@ for (const r of raw) {
     if (p.price <= 1) { console.warn(`Skipping "${p.name}" (id ${p.id}): price ${inr(p.price)} looks like a test item.`); continue; }
     products.push(p);
 }
+if (!products.length) { console.error('No usable products — refusing to rebuild (existing pages left untouched).'); process.exit(1); }
+for (const p of products) SLUGS[p.id] = p.slug;
 const byCat = Object.fromEntries(CATEGORY_ORDER.map(k => [k, products.filter(p => p.cat === k)]));
 
 for (const p of products) {
@@ -595,9 +622,27 @@ for (const p of products) {
     const rotated = idx > 0 ? [...same.slice(idx), ...same.slice(0, idx)] : same; // neighbours first, so related links spread across the catalogue
     writePage(p.path, productPage(p, [...rotated, ...others].slice(0, 4)), p.images);
 }
-for (const k of CATEGORY_ORDER) if (byCat[k].length) writePage(`/category/${CATEGORIES[k].slug}/`, categoryPage(k, byCat[k]));
+for (const k of CATEGORY_ORDER) {
+    if (byCat[k].length) writePage(`/category/${CATEGORIES[k].slug}/`, categoryPage(k, byCat[k]));
+    else writeEmptyCategoryPage(k);
+}
 writePage('/shop/', shopPage(byCat, products));
 for (const pol of POLICIES) writePage(pol.path, policyPage(pol));
+
+function writeEmptyCategoryPage(key) {
+    const cat = CATEGORIES[key];
+    const path = `/category/${cat.slug}/`;
+    const html = head({
+        title: cat.title, description: `New ${cat.label.toLowerCase()} arriving soon at Vynox. Browse all men's clothing in the meantime.`, path,
+        schema: [breadcrumb([{ name: 'Home', path: '/' }, { name: cat.label, path }])],
+    }).replace('<meta name="robots" content="index, follow, max-image-preview:large">', '<meta name="robots" content="noindex, follow">')
+        + `<main id="main" class="wrap"><div class="page-head"><h1>${esc(cat.h1)}</h1><p>New styles are arriving soon. Meanwhile, <a href="/shop/">browse all products</a>.</p></div></main>\n` + footer();
+    const file = join(ROOT, path, 'index.html');
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, html);
+    delete manifest[path];
+    console.warn(`Category "${cat.label}" has no products — wrote a noindex placeholder and left it out of the sitemap.`);
+}
 
 // Remove pages for products that no longer exist in the store
 const productDir = join(ROOT, 'products');
@@ -611,7 +656,7 @@ const slugMap = Object.fromEntries(products.map(p => [p.id, p.slug]));
 const START = '/* SEO-SLUGS:START */', END = '/* SEO-SLUGS:END */';
 let index = INDEX;
 if (index.includes(START) && index.includes(END)) {
-    index = index.slice(0, index.indexOf(START) + START.length) + JSON.stringify(slugMap) + index.slice(index.indexOf(END));
+    index = index.slice(0, index.indexOf(START) + START.length) + inlineJson(slugMap) + index.slice(index.indexOf(END));
     if (index !== INDEX) writeFileSync(join(ROOT, 'index.html'), index);
 } else {
     console.warn('SEO-SLUGS markers not found in index.html — store product cards will not link to product pages.');
@@ -623,13 +668,13 @@ if (index.includes(P_START) && index.includes(P_END)) {
     const startLineEnd = index.indexOf('\n', index.indexOf('\n', index.indexOf(P_START)) + 1) + 1; // keep the two comment lines
     const entries = raw.map(r => {
         const price = Number(r.price) || 0, mrp = Number(r.originalPrice) || null;
-        const c = String(r.category || '');
+        const c = categoryKey(r.category, r.name);
         return {
             id: String(r.id), name: r.name || '', brand: r.brand || 'Vynox',
             description: String(r.description || '').replace(/\s+/g, ' ').trim(),
             price, originalPrice: mrp, discount: mrp ? Math.round((1 - price / mrp) * 100) : 0,
             image: r.image || '', images: Array.isArray(r.images) && r.images.length ? r.images : [r.image || ''],
-            category: c ? c.charAt(0).toUpperCase() + c.slice(1) : 'Formal',
+            category: c.charAt(0).toUpperCase() + c.slice(1),
             stock: Number(r.stock) || 0,
         };
     });
@@ -663,5 +708,6 @@ ${pg.images.map(u => `    <image:image><image:loc>${esc(resized(u, 1200))}</imag
 writeFileSync(join(ROOT, 'sitemap.xml'), sitemap);
 const sortedManifest = Object.fromEntries(Object.keys(manifest).sort().map(k => [k, manifest[k]]));
 writeFileSync(manifestPath, JSON.stringify(sortedManifest, null, 2) + '\n');
+writeFileSync(slugsPath, JSON.stringify(canonical(SLUGS), null, 2) + '\n');
 
 console.log(`Built ${products.length} product pages, ${CATEGORY_ORDER.filter(k => byCat[k].length).length} category pages, shop page, ${POLICIES.length} info pages; sitemap has ${pages.length} URLs.`);

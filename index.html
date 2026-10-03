@@ -146,6 +146,18 @@
           ad_personalization: granted
         });
       })();
+      // Deep links from the product pages (/?product=…&size=…, ?cart=1, ?track=1,
+      // ?cookies=1): remember them and drop them from the address bar BEFORE GA reads
+      // the URL — changing the URL later would be counted as a second page view.
+      (function(){
+        try {
+          var u = new URL(location.href), found = {}, hit = false;
+          ['product', 'size', 'cart', 'track', 'cookies'].forEach(function(k){
+            if (u.searchParams.has(k)) { found[k] = u.searchParams.get(k); u.searchParams.delete(k); hit = true; }
+          });
+          if (hit) { window.__vynDeepLink = found; history.replaceState(null, '', u.pathname + u.search + u.hash); }
+        } catch (e) {}
+      })();
       gtag('js', new Date());
       gtag('config', 'G-4SCD2MBTPE');
     </script>
@@ -3840,13 +3852,13 @@
     {"id":"33","name":"Quilted Jacket","brand":"Levis","description":"Lightweight quilted insulated jacket","price":2599,"originalPrice":3499,"discount":26,"image":"https://images.unsplash.com/photo-1548126032-079a0fb0099d?w=800&q=90","images":["https://images.unsplash.com/photo-1548126032-079a0fb0099d?w=800&q=90"],"category":"Winter","stock":50},
     {"id":"34","name":"Zip-Up Sweatshirt","brand":"Puma","description":"Warm full-zip fleece sweatshirt","price":1199,"originalPrice":1699,"discount":29,"image":"https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=90","images":["https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=90"],"category":"Winter","stock":50},
     {"id":"36","name":"Leather Biker Jacket","brand":"Zara","description":"Premium faux leather moto biker jacket","price":3999,"originalPrice":5499,"discount":27,"image":"https://images.unsplash.com/photo-1521223890158-f9f7c3d5d504?w=800&q=90","images":["https://images.unsplash.com/photo-1521223890158-f9f7c3d5d504?w=800&q=90"],"category":"Winter","stock":50},
-    {"id":"37","name":"Navy Blue Sherwani Suit","brand":"Manyavar","description":"A rich and elegant navy blue sherwani for special occasions. Full length with fine fabric and classic buttoned style. Perfect for weddings, festivals, and festive events. Look royal and traditional every time you wear it.","price":2499,"originalPrice":4999,"discount":50,"image":"https://images.pexels.com/photos/12779716/pexels-photo-12779716.jpeg?auto=compress&cs=tinysrgb&w=800&q=90","images":["https://images.pexels.com/photos/12779716/pexels-photo-12779716.jpeg?auto=compress&cs=tinysrgb&w=800&q=90"],"category":"Kurta","stock":50},
+    {"id":"37","name":"Navy Blue Sherwani Suit","brand":"Manyavar","description":"A rich and elegant navy blue sherwani for special occasions. Full length with fine fabric and classic buttoned style. Perfect for weddings, festivals, and festive events. Look royal and traditional every time you wear it.","price":2499,"originalPrice":4999,"discount":50,"image":"https://images.pexels.com/photos/12779716/pexels-photo-12779716.jpeg?auto=compress&cs=tinysrgb&w=800&q=90","images":["https://images.pexels.com/photos/12779716/pexels-photo-12779716.jpeg?auto=compress&cs=tinysrgb&w=800&q=90"],"category":"Ethnic","stock":50},
     {"id":"38","name":"Sherwani Gold","brand":"Manyavar","description":"Wedding special embroidered sherwani","price":5999,"originalPrice":8499,"discount":29,"image":"https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=800&q=90","images":["https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=800&q=90"],"category":"Ethnic","stock":50},
-    {"id":"39","name":"Black Jodhpuri Bandhgala Suit","brand":"Manyavar","description":"A classic black Jodhpuri suit with a red pocket square. Tailored fit with buttoned bandhgala collar style. Perfect for weddings, receptions, and festive occasions. Look sharp and traditional in this elegant Indian suit.","price":4999,"originalPrice":5499,"discount":9,"image":"https://images.pexels.com/photos/12963970/pexels-photo-12963970.jpeg?auto=compress&cs=tinysrgb&w=800&q=90","images":["https://images.pexels.com/photos/12963970/pexels-photo-12963970.jpeg?auto=compress&cs=tinysrgb&w=800&q=90"],"category":"Formal","stock":50},
+    {"id":"39","name":"Black Jodhpuri Bandhgala Suit","brand":"Manyavar","description":"A classic black Jodhpuri suit with a red pocket square. Tailored fit with buttoned bandhgala collar style. Perfect for weddings, receptions, and festive occasions. Look sharp and traditional in this elegant Indian suit.","price":4999,"originalPrice":5499,"discount":9,"image":"https://images.pexels.com/photos/12963970/pexels-photo-12963970.jpeg?auto=compress&cs=tinysrgb&w=800&q=90","images":["https://images.pexels.com/photos/12963970/pexels-photo-12963970.jpeg?auto=compress&cs=tinysrgb&w=800&q=90"],"category":"Ethnic","stock":50},
     {"id":"41","name":"Cotton Kurta Sky Blue","brand":"Fabindia","description":"Breathable sky-blue cotton kurta","price":1299,"originalPrice":1799,"discount":28,"image":"https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=90","images":["https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=90"],"category":"Ethnic","stock":50},
     {"id":"43","name":"Bandhani Print Kurta","brand":"Fabindia","description":"Traditional Rajasthani bandhani print kurta","price":1699,"originalPrice":2299,"discount":26,"image":"https://images.unsplash.com/photo-1622470953794-aa9c70b0fb9d?w=800&q=90","images":["https://images.unsplash.com/photo-1622470953794-aa9c70b0fb9d?w=800&q=90"],"category":"Ethnic","stock":50},
     {"id":"46","name":"Silk Blend Kurta","brand":"Manyavar","description":"Festive silk-blend embroidered kurta","price":3299,"originalPrice":4499,"discount":27,"image":"https://images.unsplash.com/photo-1604695573706-53170668f6a6?w=800&q=90","images":["https://images.unsplash.com/photo-1604695573706-53170668f6a6?w=800&q=90"],"category":"Ethnic","stock":50},
-    {"id":"48","name":"Designer Patterned Ethnic Suit","brand":"Manyavar","description":"A stylish patterned ethnic suit with a red pocket square. Tailored fit with a modern festive design. Perfect for weddings, receptions, and special occasions. Stand out with this bold and elegant Indian outfit.","price":4499,"originalPrice":6999,"discount":36,"image":"https://images.pexels.com/photos/14378609/pexels-photo-14378609.jpeg?auto=compress&cs=tinysrgb&w=800&q=90","images":["https://images.pexels.com/photos/14378609/pexels-photo-14378609.jpeg?auto=compress&cs=tinysrgb&w=800&q=90"],"category":"Kurta","stock":50},
+    {"id":"48","name":"Designer Patterned Ethnic Suit","brand":"Manyavar","description":"A stylish patterned ethnic suit with a red pocket square. Tailored fit with a modern festive design. Perfect for weddings, receptions, and special occasions. Stand out with this bold and elegant Indian outfit.","price":4499,"originalPrice":6999,"discount":36,"image":"https://images.pexels.com/photos/14378609/pexels-photo-14378609.jpeg?auto=compress&cs=tinysrgb&w=800&q=90","images":["https://images.pexels.com/photos/14378609/pexels-photo-14378609.jpeg?auto=compress&cs=tinysrgb&w=800&q=90"],"category":"Ethnic","stock":50},
     {"id":"p1782356192127","name":"Slim Fit White Formal Shirt","brand":"Louis Philippe","description":"Premium slim fit white formal shirt crafted from soft breathable fabric. Features a modern spread collar, full sleeves, and a tailored silhouette perfect for office wear, business meetings, and formal occasions.","price":1,"originalPrice":999,"discount":100,"image":"https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&q=90","images":["https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&q=90"],"category":"Formal","stock":47},
     // PRODUCTS:END
 ];
@@ -3854,6 +3866,20 @@
  
         // ✅ SYNC: Use admin-edited products if available, else seed from hardcoded list
         // ✅ Helper: map an admin product record to the storefront format
+        // One category mapping for the store and the static pages (categoryKey() in
+        // scripts/build-seo-pages.mjs): "kurta" is Ethnic, and a blank/unknown category is
+        // inferred from the product name.
+        function storeCategory(category, name) {
+            var c = String(category || '').toLowerCase().trim();
+            if (c === 'kurta' || c === 'kurtas') return 'Ethnic';
+            if (c === 'formal' || c === 'casual' || c === 'winter' || c === 'ethnic') return c.charAt(0).toUpperCase() + c.slice(1);
+            var n = String(name || '').toLowerCase();
+            if (/\b(kurtas?|sherwanis?|bandhgala|jodhpuri|ethnic|nehru)\b/.test(n)) return 'Ethnic';
+            if (/\b(jackets?|hoodies?|sweaters?|sweatshirts?|coats?|thermals?|puffer)\b/.test(n)) return 'Winter';
+            if (/\b(t-shirts?|tees?|jeans|chinos?|joggers?|cargo|polos?|shorts)\b/.test(n)) return 'Casual';
+            return 'Formal';
+        }
+
         function mapAdminProduct(p) {
             return {
                 id: String(p.id),
@@ -3865,7 +3891,7 @@
                 discount: p.originalPrice ? Math.round((1 - p.price / p.originalPrice) * 100) : 0,
                 image: p.image || '',
                 images: p.images || [p.image || ''],
-                category: p.category ? (p.category.charAt(0).toUpperCase() + p.category.slice(1)) : 'Formal',
+                category: storeCategory(p.category, p.name),
                 stock: p.stock || 0
             };
         }
@@ -3878,7 +3904,6 @@
                     var adminProds = JSON.parse(saved);
                     if (adminProds && adminProds.length) {
                         products = adminProds.map(mapAdminProduct);
-                        window._vynProductsCached = true;
                     }
                 } catch(e) { /* fallback to hardcoded */ }
             } else {
@@ -3915,7 +3940,6 @@
                         products = firestoreProds.map(mapAdminProduct);
                         // Re-render the current view with fresh data
                         renderProductGrid(currentFilter);
-                        window._vynProductsLive = true;
                         document.dispatchEvent(new Event('vynox:products'));
                     }
                 }, function(err) {
@@ -3993,7 +4017,7 @@
         let lastFiltered = [];
 
         function getFilteredProducts(category) {
-            let filtered = category === 'all' ? products.slice() : products.filter(p => p.category === category || (category === 'Ethnic' && p.category === 'Kurta'));
+            let filtered = category === 'all' ? products.slice() : products.filter(p => p.category === category);
             // Price filter
             const maxPrice = parseInt(document.getElementById('priceRangeInput') && document.getElementById('priceRangeInput').value || 10000, 10);
             filtered = filtered.filter(p => p.price <= maxPrice);
@@ -4165,17 +4189,14 @@
                 "brand": { "@type": "Brand", "name": p.brand },
                 "offers": {
                     "@type": "Offer",
-                    "url": location.href,
+                    "url": (window.VYN_SEO_SLUGS && VYN_SEO_SLUGS[p.id]) ? location.origin + '/products/' + VYN_SEO_SLUGS[p.id] + '/' : location.href,
                     "priceCurrency": "INR",
                     "price": p.price,
                     "availability": (p.stock !== undefined && p.stock === 0) ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
                     "itemCondition": "https://schema.org/NewCondition"
-                },
-                "aggregateRating": {
-                    "@type": "AggregateRating",
-                    "ratingValue": "4.4",
-                    "reviewCount": String((parseInt(p.id) * 37 % 250) + 60)
                 }
+                // No aggregateRating: the store has no real reviews yet, and made-up ratings
+                // in structured data violate Google's review-snippet guidelines.
             });
             document.head.appendChild(s);
         }
@@ -4429,11 +4450,11 @@
                         <h3>You may also like</h3>
                         <div class="related-grid">
                             ${related.map(p => `
-                                <article class="product-card" onclick="openProduct('${p.id}')" role="listitem" tabindex="0" onkeypress="if(event.key==='Enter') openProduct('${p.id}')" aria-label="${p.name} by ${p.brand}">
-                                    <div class="product-image"><img src="${p.image}" alt="${p.name}" loading="lazy"></div>
+                                <article class="product-card" onclick="openProduct('${escapeAttr(p.id)}')" role="listitem" tabindex="0" onkeypress="if(event.key==='Enter') openProduct('${escapeAttr(p.id)}')" aria-label="${escapeAttr(p.name)} by ${escapeAttr(p.brand)}">
+                                    <div class="product-image"><img src="${escapeAttr(p.image)}" alt="${escapeAttr(p.name)}" loading="lazy"></div>
                                     <div class="product-info">
-                                        <div class="product-brand">${p.brand}</div>
-                                        <div class="product-name">${p.name}</div>
+                                        <div class="product-brand">${escapeHtml(p.brand)}</div>
+                                        <div class="product-name">${escapeHtml(p.name)}</div>
                                         <div class="product-price"><span class="current-price">₹${p.price.toLocaleString('en-IN')}</span></div>
                                     </div>
                                 </article>
@@ -4848,6 +4869,8 @@
             // Reset payment method to "online" each time the modal opens
             const onlineRadio = document.querySelector('input[name="cm_payment"][value="online"]');
             if (onlineRadio) onlineRadio.checked = true;
+            const submitBtnEl = document.getElementById('cmSubmitBtn');
+            if (submitBtnEl) submitBtnEl.disabled = false;
             ctx.paymentMethod = 'online';
             ctx.shippingFee = 0;
             ctx.amount = ctx.baseAmount;
@@ -4931,6 +4954,8 @@
         // openCustomerModal() resets every field, so it is only for a fresh checkout.
         function reopenCustomerModal() {
             if (!_paymentContext) return;
+            var submitBtn = document.getElementById('cmSubmitBtn');
+            if (submitBtn) submitBtn.disabled = false;
             onPaymentMethodChange();
             document.getElementById('orderFormOverlay').classList.add('open');
         }
@@ -4961,6 +4986,23 @@
 
         // ─── Validate & Proceed to Payment (Online via Razorpay OR COD) ──
         async function proceedToRazorpay() {
+            // ✅ The live Key ID is saved by the admin in Firestore. On a customer's first
+            //    visit it may not be cached yet, so wait for it (instead of falling back to
+            //    the placeholder key → "Razorpay is not configured") BEFORE reading the
+            //    form: anything changed during the wait (details, COD) is then used as-is.
+            if (_paymentContext && getSelectedPaymentMethod() === 'online' && !getCachedRazorpayKeyId()) {
+                const waitingCtx = _paymentContext;
+                const submitBtn = document.getElementById('cmSubmitBtn');
+                if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ Loading payment…'; }
+                await loadRazorpayCheckoutConfig();
+                // Customer closed this checkout while waiting — a newer one owns the button.
+                if (_paymentContext !== waitingCtx) return;
+                if (submitBtn) submitBtn.disabled = false;
+                onPaymentMethodChange(); // restore the label for the currently selected method
+                // Switched to Cash on Delivery while waiting → let them confirm the COD order.
+                if (getSelectedPaymentMethod() !== 'online') return;
+            }
+
             // ✅ FIX #24 (audit): Re-capture _paymentContext from the current cart/product
             //    state. While the login modal was open, the user may have removed items
             //    from the cart or applied a different coupon — the stale _paymentContext
@@ -5061,15 +5103,7 @@
                 return;
             }
 
-            // ✅ The live Key ID is saved by the admin in Firestore. On a customer's first
-            //    visit it isn't cached yet, so wait for it instead of falling back to the
-            //    placeholder key ("Razorpay is not configured").
-            const submitBtn = document.getElementById('cmSubmitBtn');
-            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ Loading payment…'; }
-            var rzpConfig = await loadRazorpayCheckoutConfig();
-            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '🔒 Proceed to Payment'; }
-            // Customer closed the form while the key was loading.
-            if (_paymentContext !== ctx) return;
+            var rzpConfig = getRazorpayCheckoutConfig();
 
             // Close customer modal before opening Razorpay
             document.getElementById('orderFormOverlay').classList.remove('open');
@@ -5902,14 +5936,14 @@
             }
             list.innerHTML = items.map(p => `
                 <div class="cart-item">
-                    <img src="${p.image}" alt="${p.name}">
+                    <img src="${escapeAttr(p.image)}" alt="${escapeAttr(p.name)}">
                     <div class="cart-item-info">
-                        <div class="cart-item-name">${p.name}</div>
-                        <div class="cart-item-meta">${p.brand}</div>
+                        <div class="cart-item-name">${escapeHtml(p.name)}</div>
+                        <div class="cart-item-meta">${escapeHtml(p.brand)}</div>
                         <div class="cart-item-price">₹${p.price.toLocaleString('en-IN')}</div>
                         <div class="cart-item-controls">
-                            <button onclick="closeWishlistDrawer(); openProduct('${p.id}')" style="padding:5px 12px;font-size:12px;background:#000;color:#fff;border:none;border-radius:6px;cursor:pointer;">View</button>
-                            <button class="cart-remove" onclick="removeFromWishlistDrawer('${p.id}')">✕</button>
+                            <button onclick="closeWishlistDrawer(); openProduct('${escapeAttr(p.id)}')" style="padding:5px 12px;font-size:12px;background:#000;color:#fff;border:none;border-radius:6px;cursor:pointer;">View</button>
+                            <button class="cart-remove" onclick="removeFromWishlistDrawer('${escapeAttr(p.id)}')">✕</button>
                         </div>
                     </div>
                 </div>
@@ -6333,6 +6367,7 @@
         async function sendResetLink() {
             var email = document.getElementById('accForgotEmail').value.trim().toLowerCase();
             var btn   = document.getElementById('accResetBtn');
+            if (btn.disabled) return; // already sending (double click / Enter)
             if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Please enter a valid email address', 'error'); return; }
             if (_resetCooldown > Date.now()) return;
             btn.disabled = true;
@@ -9085,9 +9120,13 @@ function fetchRazorpayConfig() {
     return _rzpConfigFetch;
 }
 
-async function loadRazorpayCheckoutConfig() {
+function getCachedRazorpayKeyId() {
     var cached = safeParseJSON(localStorage.getItem('vynox_razorpay_config') || 'null', null);
-    if (!(cached && cached.keyId)) {
+    return (cached && cached.keyId) || '';
+}
+
+async function loadRazorpayCheckoutConfig() {
+    if (!getCachedRazorpayKeyId()) {
         await Promise.race([
             fetchRazorpayConfig(),
             new Promise(function(resolve){ setTimeout(resolve, 8000); })
@@ -9331,32 +9370,30 @@ function applyDrawerFilters() {
 
 // ✅ Deep links from the static product / category pages:
 //    /?product=<id>[&size=M]   /?cart=1   /?track=1   /?cookies=1
+//    The parameters were read (and removed from the address bar) in <head>.
 (function() {
-    var params = new URLSearchParams(window.location.search);
-    var pid = params.get('product'), size = params.get('size');
-    if (!(pid || params.get('cart') || params.get('track') || params.get('cookies'))) return;
+    var dl = window.__vynDeepLink;
+    if (!dl) return;
     window._onDOMReady(function() {
-        if (params.get('cart')) openCartDrawer();
-        if (params.get('track')) openTrackOrderModal();
-        if (params.get('cookies')) resetCookieConsent();
-        if (pid) {
+        if (dl.cart) openCartDrawer();
+        if (dl.track) openTrackOrderModal();
+        if (dl.cookies) resetCookieConsent();
+        if (dl.product) {
             var opened = false;
             var open = function() {
-                if (opened || !products.some(function(p) { return String(p.id) === String(pid); })) return;
+                if (opened || !products.some(function(p) { return String(p.id) === String(dl.product); })) return;
                 opened = true;
-                openProduct(pid);
-                if (size && /^(S|M|L|XL|XXL)$/.test(size)) selectSize(size);
+                openProduct(dl.product);
+                if (dl.size && /^(S|M|L|XL|XXL)$/.test(dl.size)) selectSize(dl.size);
             };
-            // The built-in product list is only a placeholder until the live list arrives
-            // (from the local cache or Firestore) and its ids overlap, so wait for real data.
-            if (window._vynProductsLive || window._vynProductsCached) open();
-            else {
-                document.addEventListener('vynox:products', open, { once: true });
+            // Open now if the product is already in the list (built-in copy of the catalogue
+            // or this browser's cache); otherwise wait for the live list from Firestore.
+            open();
+            if (!opened) {
+                document.addEventListener('vynox:products', open);
                 setTimeout(open, 6000);
             }
         }
-        // Clean the address bar so a refresh doesn't reopen the product / drawer
-        if (window.history && history.replaceState) history.replaceState(null, '', '/' + window.location.hash);
     });
 })();
 

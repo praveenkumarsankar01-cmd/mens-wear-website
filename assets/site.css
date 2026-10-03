@@ -1,7 +1,7 @@
 /* Vynox — shared styles for the static SEO pages (products, categories, shop, policies).
    Generated pages link this file; the main store (index.html) keeps its own inline CSS. */
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 80px; } /* keep focused/anchored content clear of the sticky header */
 body {
     margin: 0;
     font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -36,7 +36,8 @@ a { color: inherit; }
 /* Product page */
 .product { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; padding: 20px 0 40px; }
 .gallery { position: sticky; top: 84px; align-self: start; }
-@media (max-width: 860px) { .product { grid-template-columns: 1fr; gap: 24px; } .gallery { position: static; } }
+@media (max-width: 860px) { html { scroll-padding-top: 120px; } .product { grid-template-columns: minmax(0, 1fr); gap: 24px; } .gallery { position: static; } }
+@media (max-width: 400px) { .size-guide-table th, .size-guide-table td, .details-table th, .details-table td { padding: 9px 6px; } }
 .gallery-main { background: #f6f6f6; border-radius: 14px; overflow: hidden; aspect-ratio: 4 / 5; }
 .gallery-main img { width: 100%; height: 100%; object-fit: cover; }
 .thumbs { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
@@ -47,11 +48,11 @@ a { color: inherit; }
 .product h1 { font-size: clamp(24px, 3.4vw, 34px); line-height: 1.2; margin: 0 0 14px; letter-spacing: -0.5px; }
 .price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; }
 .price .now { font-size: 30px; font-weight: 800; }
-.price s { color: #888; font-size: 18px; }
-.price .off { color: #16a34a; font-weight: 700; font-size: 16px; }
+.price s { color: #6b6b6b; font-size: 18px; }
+.price .off { color: #15803d; font-weight: 700; font-size: 16px; }
 .tax { color: #666; font-size: 13.5px; margin: 4px 0 14px; }
 .stock { font-weight: 600; font-size: 14px; margin: 0 0 18px; }
-.stock.in { color: #16a34a; } .stock.low { color: #dc2626; } .stock.out { color: #dc2626; }
+.stock.in { color: #15803d; } .stock.low { color: #dc2626; } .stock.out { color: #dc2626; }
 .sizes-label { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
 .sizes { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
 .sizes a { min-width: 52px; text-align: center; border: 1.5px solid #ddd; border-radius: 10px; padding: 10px 12px; text-decoration: none; font-weight: 600; font-size: 14px; }
@@ -85,11 +86,11 @@ a { color: inherit; }
 .card-img { background: #f6f6f6; border-radius: 12px; overflow: hidden; aspect-ratio: 4 / 5; position: relative; }
 .card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s; }
 .card a:hover .card-img img { transform: scale(1.04); }
-.card-badge { position: absolute; top: 8px; left: 8px; background: #16a34a; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 5px; }
-.card-brand { font-size: 12px; color: #777; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; }
+.card-badge { position: absolute; top: 8px; left: 8px; background: #15803d; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 5px; }
+.card-brand { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; }
 .card-name { font-weight: 600; font-size: 15px; line-height: 1.35; margin: 2px 0 4px; }
 .card-price { font-weight: 800; }
-.card-price s { color: #999; font-weight: 400; font-size: 13px; margin-left: 6px; }
+.card-price s { color: #6b6b6b; font-weight: 400; font-size: 13px; margin-left: 6px; }
 .related h2, .shop-section h2 { font-size: 22px; margin: 10px 0 0; }
 .shop-section { border-top: 1px solid #eee; padding-top: 22px; }
 .shop-section .see-all { font-size: 14px; font-weight: 600; }
@@ -104,19 +105,20 @@ a { color: inherit; }
 .policy-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px; }
 @media (max-width: 720px) { .policy-cards { grid-template-columns: 1fr; } }
 .policy-card { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 22px; }
-.policy-card h3 { font-size: 17px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+.policy-card h2 { font-size: 17px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
 .policy-card p, .policy-card li { color: #555; font-size: 14.5px; line-height: 1.7; }
 .policy-card ul { list-style: none; padding: 0; }
-.policy-card li { display: flex; gap: 8px; margin-bottom: 8px; }
-.policy-card li .check { color: #16a34a; font-weight: 700; flex-shrink: 0; }
+.policy-card li { display: flex; gap: 8px; margin-bottom: 8px; overflow-wrap: anywhere; }
+.policy-card li > * { min-width: 0; }
+.policy-card li .check { color: #15803d; font-weight: 700; flex-shrink: 0; }
 .policy-highlight { background: #f7f7f7; border-radius: 12px; padding: 18px 20px; margin-top: 14px; }
-.policy-highlight h4 { margin: 0 0 8px; }
+.policy-highlight h3 { margin: 0 0 8px; }
 .policy-highlight ul { padding-left: 0; list-style: none; margin: 0; }
 .policy-highlight li { display: block; margin-bottom: 6px; }
 .about-features { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 24px; }
 @media (max-width: 720px) { .about-features { grid-template-columns: 1fr 1fr; } }
 .about-feature { background: #f7f7f7; border-radius: 12px; padding: 16px; text-align: center; }
-.about-feature h4 { font-size: 15px; margin: 0 0 4px; }
+.about-feature h3 { font-size: 15px; margin: 0 0 4px; }
 .about-feature p { font-size: 13px; color: #666; margin: 0; }
 .contact-list li { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 
