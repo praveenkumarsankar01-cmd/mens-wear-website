@@ -109,9 +109,16 @@ function resized(url, w) {
 
 // Accept http(s) image URLs only; fix protocol-relative ones ("//host/…")
 function imageUrl(s) {
-    s = String(s || '').trim();
+    const original = s = String(s || '').trim();
+    if (!s) return '';
     if (s.startsWith('//')) s = 'https:' + s;
-    try { const u = new URL(s); return /^https?:$/.test(u.protocol) ? u.toString() : ''; } catch { return ''; }
+    else if (/^[a-z0-9.-]+\.[a-z]{2,}\//i.test(s)) s = 'https://' + s; // "images.unsplash.com/…"
+    try {
+        const u = new URL(s);
+        if (/^https?:$/.test(u.protocol)) return u.toString();
+    } catch { /* fall through */ }
+    console.warn(`Ignoring invalid image URL: ${original}`);
+    return '';
 }
 
 // JSON for inline <script> blocks: "<" escaped so data can never close the tag
@@ -164,16 +171,14 @@ async function loadProducts() {
             const doc = await res.json();
             const list = fromFirestoreValue(doc.fields.list);
             if (!Array.isArray(list) || !list.length) throw new Error('empty product list');
-            mkdirSync(dirname(snapshot), { recursive: true });
-            writeFileSync(snapshot, JSON.stringify(canonical(list), null, 2) + '\n');
             console.log(`Fetched ${list.length} live products from Firestore.`);
-            return list;
+            return { list, save: () => { mkdirSync(dirname(snapshot), { recursive: true }); writeFileSync(snapshot, JSON.stringify(canonical(list), null, 2) + '\n'); } };
         } catch (e) {
             if (args.has('--require-live')) { console.error('Live product fetch failed:', e.message); process.exit(1); }
             console.warn(`Live product fetch failed (${e.message}); using data/products.json.`);
         }
     }
-    return JSON.parse(readFileSync(snapshot, 'utf8'));
+    return { list: JSON.parse(readFileSync(snapshot, 'utf8')), save: () => {} };
 }
 
 function normalise(raw) {
@@ -225,6 +230,7 @@ function policyContent(id) {
         .replace(/<button onclick="resetCookieConsent\(\)"[^>]*>([\s\S]*?)<\/button>/g,
             '<a class="btn secondary" href="/?cookies=1">$1</a>')
         .replace(/<h2>/, '<h1>').replace(/<\/h2>/, '</h1>')
+        .replace(/<div class="about-feature"><h4>([\s\S]*?)<\/h4>/g, '<div class="about-feature"><h2>$1</h2>')
         .replace(/<(\/?)h3>/g, '<$1h2>')
         .replace(/<(\/?)h4>/g, '<$1h3>');
     const subtitle = (inner.match(/<p class="policy-subtitle">([\s\S]*?)<\/p>/) || [])[1] || '';
@@ -603,15 +609,31 @@ function trackPage(path, content, images = []) {
     pages.push({ path, images });
 }
 
-const raw = await loadProducts();
+const loaded = await loadProducts();
+const raw = [];
+const seenIds = new Set();
+for (const r of loaded.list) {
+    const id = String(r && r.id);
+    if (seenIds.has(id)) { console.warn(`Duplicate product id ${id} ("${r.name}") — keeping the first one.`); continue; }
+    seenIds.add(id);
+    raw.push(r);
+}
 const products = [];
+const keepPages = new Set(); // pages of products skipped only because of a data mistake
 for (const r of raw) {
     const p = normalise(r);
-    if (!p.name || !p.image) { console.warn(`Skipping product ${p.id}: missing name or image.`); continue; }
+    if (!p.name || !p.image) {
+        console.warn(`Skipping product ${p.id}: missing name or image — fix it in Admin (its existing page is kept).`);
+        if (SLUGS[p.id]) keepPages.add(SLUGS[p.id]);
+        continue;
+    }
+    const clash = products.find(x => x.slug === p.slug);
+    if (clash) { console.warn(`Product ${p.id} would share the URL of product ${clash.id} — using a numbered URL.`); p.slug += '-2'; p.path = `/products/${p.slug}/`; p.url = SITE + p.path; }
     if (p.price <= 1) { console.warn(`Skipping "${p.name}" (id ${p.id}): price ${inr(p.price)} looks like a test item.`); continue; }
     products.push(p);
 }
-if (!products.length) { console.error('No usable products — refusing to rebuild (existing pages left untouched).'); process.exit(1); }
+if (!products.length) { console.error('No usable products — refusing to rebuild (existing pages and data left untouched).'); process.exit(1); }
+loaded.save();
 for (const p of products) SLUGS[p.id] = p.slug;
 const byCat = Object.fromEntries(CATEGORY_ORDER.map(k => [k, products.filter(p => p.cat === k)]));
 
@@ -648,6 +670,7 @@ function writeEmptyCategoryPage(key) {
 const productDir = join(ROOT, 'products');
 const live = new Set(products.map(p => p.slug));
 for (const d of existsSync(productDir) ? readdirSync(productDir) : []) {
+    if (keepPages.has(d)) { console.warn(`Keeping /products/${d}/ (its product has a data problem).`); continue; }
     if (!live.has(d)) { rmSync(join(productDir, d), { recursive: true, force: true }); delete manifest[`/products/${d}/`]; console.log('Removed stale page /products/' + d + '/'); }
 }
 

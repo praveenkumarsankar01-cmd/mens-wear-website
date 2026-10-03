@@ -3896,6 +3896,31 @@
             };
         }
 
+        // When the live list arrives (or an admin edits a product), an open quick view
+        // and a Buy Now order summary must show the live price, not the built-in one.
+        function refreshOpenProductViews() {
+            var modal = document.getElementById('productModal');
+            if (selectedProduct && modal && modal.classList.contains('active')) {
+                var fresh = products.find(function(p) { return String(p.id) === String(selectedProduct.id); });
+                if (fresh && (fresh.price !== selectedProduct.price || fresh.originalPrice !== selectedProduct.originalPrice ||
+                              fresh.stock !== selectedProduct.stock || fresh.name !== selectedProduct.name || fresh.image !== selectedProduct.image)) {
+                    var keepSize = selectedSize, keepQty = quantity;
+                    openProduct(fresh.id);
+                    if (keepSize) selectSize(keepSize);
+                    if (keepQty > 1) { quantity = keepQty; var q = document.getElementById('qtyDisplay'); if (q) q.textContent = keepQty; }
+                }
+            }
+            if (_paymentContext && _paymentContext.type === 'buy_now') {
+                var live = products.find(function(p) { return String(p.id) === String(_paymentContext.id); });
+                if (live && live.price !== _paymentContext.price) {
+                    _paymentContext.price = live.price;
+                    _paymentContext.product = live.name;
+                    _paymentContext.baseAmount = live.price * _paymentContext.qty;
+                    onPaymentMethodChange(); // recomputes amount (+COD fee) and the summary line
+                }
+            }
+        }
+
         (function syncProductsFromAdmin() {
             // ── Step 1: Load from localStorage immediately for instant first paint ──
             var saved = localStorage.getItem('vynox_admin_products');
@@ -3940,6 +3965,7 @@
                         products = firestoreProds.map(mapAdminProduct);
                         // Re-render the current view with fresh data
                         renderProductGrid(currentFilter);
+                        refreshOpenProductViews();
                         document.dispatchEvent(new Event('vynox:products'));
                     }
                 }, function(err) {
@@ -4985,24 +5011,7 @@
         }
 
         // ─── Validate & Proceed to Payment (Online via Razorpay OR COD) ──
-        async function proceedToRazorpay() {
-            // ✅ The live Key ID is saved by the admin in Firestore. On a customer's first
-            //    visit it may not be cached yet, so wait for it (instead of falling back to
-            //    the placeholder key → "Razorpay is not configured") BEFORE reading the
-            //    form: anything changed during the wait (details, COD) is then used as-is.
-            if (_paymentContext && getSelectedPaymentMethod() === 'online' && !getCachedRazorpayKeyId()) {
-                const waitingCtx = _paymentContext;
-                const submitBtn = document.getElementById('cmSubmitBtn');
-                if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ Loading payment…'; }
-                await loadRazorpayCheckoutConfig();
-                // Customer closed this checkout while waiting — a newer one owns the button.
-                if (_paymentContext !== waitingCtx) return;
-                if (submitBtn) submitBtn.disabled = false;
-                onPaymentMethodChange(); // restore the label for the currently selected method
-                // Switched to Cash on Delivery while waiting → let them confirm the COD order.
-                if (getSelectedPaymentMethod() !== 'online') return;
-            }
-
+        async function proceedToRazorpay(keyWaitDone) {
             // ✅ FIX #24 (audit): Re-capture _paymentContext from the current cart/product
             //    state. While the login modal was open, the user may have removed items
             //    from the cart or applied a different coupon — the stale _paymentContext
@@ -5075,6 +5084,24 @@
                 openAccountModal();
                 showToast('Please log in or sign up to complete your order.', '');
                 return;
+            }
+
+            // ✅ The live Key ID is saved by the admin in Firestore. On a customer's first
+            //    visit it may not be cached yet: wait for it (instead of falling back to the
+            //    placeholder key → "Razorpay is not configured"), then start over, so anything
+            //    changed during the wait (details, switching to COD) is re-read and validated.
+            if (!keyWaitDone && getSelectedPaymentMethod() === 'online' && !getCachedRazorpayKeyId()) {
+                const waitingCtx = _paymentContext;
+                const submitBtn = document.getElementById('cmSubmitBtn');
+                if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ Loading payment…'; }
+                await loadRazorpayCheckoutConfig();
+                // Customer closed this checkout while waiting — a newer one owns the button.
+                if (_paymentContext !== waitingCtx) return;
+                if (submitBtn) submitBtn.disabled = false;
+                onPaymentMethodChange(); // restore the label for the currently selected method
+                // Switched to Cash on Delivery while waiting → let them confirm the COD order.
+                if (getSelectedPaymentMethod() !== 'online') return;
+                return proceedToRazorpay(true);
             }
 
             const orderId   = generateOrderId();
