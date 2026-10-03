@@ -1,0 +1,38 @@
+name: Rebuild product pages & sitemap
+
+# Rebuilds /products/, /category/, /shop/ and sitemap.xml from the live store catalogue
+# (Firestore settings/products) so prices, stock and new products stay in sync with Admin.
+# Commits only when something changed; Vercel then redeploys automatically.
+on:
+  schedule:
+    - cron: '30 0 * * *'   # every day at 06:00 IST
+  workflow_dispatch:        # "Run workflow" button in the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seo-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build pages from live catalogue
+        run: node scripts/build-seo-pages.mjs --require-live
+      - name: Commit changes
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No catalogue changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Update product pages and sitemap from live catalogue"
+          git push
