@@ -6,8 +6,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <title>Buy Men's Formal Shirts, Kurtas &amp; Casual Wear Online India | Vynox Menswear</title>
-    <meta name="description" content="Buy premium menswear online in India at Vynox. Formal shirts, ethnic kurtas, blazers, casual wear &amp; winter jackets. Free shipping on prepaid orders. 3-day easy returns. 1000+ happy customers.">
+    <title>Buy Men's Shirts, Kurtas &amp; Jackets Online India | Vynox</title>
+    <meta name="description" content="Shop premium menswear online in India at Vynox: formal shirts, kurtas, blazers, casual &amp; winter wear. Free shipping on prepaid orders. Easy 3-day returns.">
     <meta name="keywords" content="men's clothing India, formal shirts online, casual wear men, ethnic kurta, winter jacket, blazer, menswear India, Vynox">
     <meta name="author" content="Vynox">
     <meta name="robots" content="index, follow">
@@ -31,7 +31,6 @@
           "@type": "Organization",
           "name": "Vynox",
           "url": "https://vynox-menswear.vercel.app/",
-          "logo": "https://vynox-menswear.vercel.app/logo.png",
           "description": "Premium menswear collection designed for the modern gentleman.",
           "contactPoint": {
             "@type": "ContactPoint",
@@ -58,7 +57,7 @@
           "@type": "Store",
           "name": "Vynox Menswear",
           "url": "https://vynox-menswear.vercel.app/",
-          "priceRange": "₹499 - ₹9999",
+          "priceRange": "₹599 - ₹18999",
           "currenciesAccepted": "INR",
           "paymentAccepted": "Cash, Credit Card, UPI",
           "address": {
@@ -126,28 +125,45 @@
     <meta name="apple-mobile-web-app-title" content="Vynox">
     <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlZ5bm94IE1lbnN3ZWFyIiwKICAic2hvcnRfbmFtZSI6ICJWeW5veCIsCiAgInN0YXJ0X3VybCI6ICIuLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZmZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiNmZmZmZmYiLAogICJpY29ucyI6IFtdCn0=">
 
-    <!-- ✅ ANALYTICS: Google Analytics 4 (replace G-XXXXXXXXXX with your measurement ID) -->
+    <!-- ✅ ANALYTICS: Google Analytics 4 with Consent Mode v2.
+         Every visit sends a page_view. Until the visitor clicks "Accept All" on the
+         cookie banner, analytics storage is denied (cookieless pings only);
+         acceptCookies() / declineCookies() update the consent state. -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-4SCD2MBTPE"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
+      (function(){
+        var consent = null;
+        try { consent = localStorage.getItem('vyn_cookie_consent'); } catch (e) {}
+        var granted = consent === 'accepted' ? 'granted' : 'denied';
+        gtag('consent', 'default', {
+          analytics_storage: granted,
+          ad_storage: granted,
+          ad_user_data: granted,
+          ad_personalization: granted
+        });
+      })();
       gtag('js', new Date());
-      gtag('config', 'G-4SCD2MBTPE', { send_page_view: false });
+      gtag('config', 'G-4SCD2MBTPE');
     </script>
 
-    <!-- ✅ ANALYTICS: Meta Pixel (replace YOUR_PIXEL_ID with your Meta Pixel ID) -->
+    <!-- ✅ ANALYTICS: Meta Pixel — paste your numeric Pixel ID below to enable it.
+         It stays off while the ID is empty (the old 'YOUR_PIXEL_ID' placeholder made
+         the pixel log an "Invalid PixelID" error on every page load). -->
     <script>
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-      n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
-      document,'script','https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', 'YOUR_PIXEL_ID');
-      fbq('track', 'PageView');
+      window.VYN_META_PIXEL_ID = '';
+      if (/^\d{10,20}$/.test(window.VYN_META_PIXEL_ID)) {
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+        n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+        document,'script','https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', window.VYN_META_PIXEL_ID);
+        fbq('track', 'PageView');
+      }
     </script>
-    <noscript><img height="1" width="1" style="display:none"
-      src="https://www.facebook.com/tr?id=YOUR_PIXEL_ID&ev=PageView&noscript=1" alt=""/></noscript>
 
     <!-- ✅ SECURITY NOTE: This is a single-file static site. For production, ALL secrets
          (Razorpay Key Secret, Firebase service-account keys, SMTP creds, GST credentials,
@@ -229,7 +245,9 @@
             position: fixed; bottom: 0; left: 0; right: 0;
             background: #111; color: #fff; padding: 16px 24px;
             display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
-            z-index: 99997; transform: translateY(100%); transition: transform 0.4s;
+            /* Above the page and header (1000) but below every modal/drawer (2000+), so it
+               never covers their buttons (Apply Filters, Checkout, Proceed to Payment…). */
+            z-index: 1500; transform: translateY(100%); transition: transform 0.4s;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
         }
         .cookie-banner.show { transform: translateY(0); }
@@ -4701,6 +4719,17 @@
         let _paymentContext = null; // { type, product, amount, size, qty, brand, image }
         let _pendingCheckoutReturn = false; // flag: return to checkout after login
 
+        // ─── Logged-in customer session ────────────────────────────
+        //    "Remember Me" stores it in localStorage, otherwise in sessionStorage —
+        //    the checkout login gate must read both, or a customer who logged in
+        //    without "Remember Me" gets sent back to the login modal forever.
+        function getActiveSession() {
+            var sess = safeParseJSON(localStorage.getItem('vynox_session') || sessionStorage.getItem('vynox_session') || 'null', null);
+            if (!sess || !sess.email) return null;
+            if (sess.expiresAt && Date.now() > sess.expiresAt) return null;
+            return sess;
+        }
+
         // ─── Save a paid online order into the admin system (localStorage + Firebase) ───
         async function saveOnlineOrder(orderId, paymentId, name, phone, email, address, ctx, verified) {
             const items = (ctx.type === 'buy_now')
@@ -4950,9 +4979,32 @@
             document.getElementById('cm_country').value   = a.country  || 'India';
         }
 
+        // Re-show the checkout form WITHOUT clearing what the customer already typed.
+        // openCustomerModal() resets every field, so it is only for a fresh checkout.
+        function reopenCustomerModal() {
+            if (!_paymentContext) return;
+            onPaymentMethodChange();
+            document.getElementById('orderFormOverlay').classList.add('open');
+        }
+
+        // ─── Continue checkout once the customer has logged in / signed up ──
+        //    Their details are still in the (hidden) form, so go straight on to
+        //    payment instead of making them fill the form again.
+        function resumeCheckoutAfterLogin() {
+            if (!_pendingCheckoutReturn) return;
+            _pendingCheckoutReturn = false;
+            if (!_paymentContext) return;
+            var sess = getActiveSession();
+            var emEl = document.getElementById('cm_email');
+            if (emEl && !emEl.value && sess) emEl.value = sess.email;
+            reopenCustomerModal();
+            proceedToRazorpay();
+        }
+
         function closeCustomerModal() {
             document.getElementById('orderFormOverlay').classList.remove('open');
             _paymentContext = null;
+            _pendingCheckoutReturn = false;
         }
 
         function handleCustomerModalBgClick(e) {
@@ -4961,48 +5013,41 @@
 
         // ─── Validate & Proceed to Payment (Online via Razorpay OR COD) ──
         async function proceedToRazorpay() {
-            // ✅ Login gate: if not authenticated, hide checkout (preserve _paymentContext) and show login
-            var session = safeParseJSON(localStorage.getItem('vynox_session') || 'null', null);
-            if (!session || !session.email) {
-                _pendingCheckoutReturn = true; // flag to return to checkout after login
-                // Hide the checkout overlay WITHOUT calling closeCustomerModal() so
-                // _paymentContext is kept alive for when the user returns after login.
-                document.getElementById('orderFormOverlay').classList.remove('open');
-                openAccountModal();
-                return;
-            }
-
             // ✅ FIX #24 (audit): Re-capture _paymentContext from the current cart/product
             //    state. While the login modal was open, the user may have removed items
             //    from the cart or applied a different coupon — the stale _paymentContext
             //    captured at checkout time would otherwise charge them for the wrong cart.
             if (_paymentContext) {
+                // Preserve the user-selected payment method & shipping fee.
+                const method = _paymentContext.paymentMethod || 'online';
                 if (_paymentContext.type === 'cart' && cart) {
                     const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
                     const discount = appliedCoupon ? appliedCoupon.discount : 0;
                     const baseTotal = Math.max(0, subtotal - discount);
                     _paymentContext.items = JSON.parse(JSON.stringify(cart));
+                    _paymentContext.product = cart.map(i => `${i.name}(${i.size})x${i.qty}`).join(', ');
                     _paymentContext.subtotal = subtotal;
                     _paymentContext.discount = discount;
                     _paymentContext.couponCode = appliedCoupon ? appliedCoupon.code : null;
                     _paymentContext.baseAmount = baseTotal;
-                    // Preserve the user-selected payment method & shipping fee.
-                    const method = _paymentContext.paymentMethod || 'online';
-                    _paymentContext.amount = method === 'cod' ? (baseTotal + COD_SHIPPING_FEE) : baseTotal;
-                    _paymentContext.shippingFee = method === 'cod' ? COD_SHIPPING_FEE : 0;
                     if (cart.length === 0) {
                         showToast('Your cart is empty. Add items before checkout.', 'error');
                         return;
                     }
-                } else if (_paymentContext.type === 'buy_now' && selectedProduct) {
-                    // Refresh product details in case admin edited it during login.
-                    _paymentContext.price = selectedProduct.price;
-                    _paymentContext.product = selectedProduct.name;
-                    _paymentContext.brand = selectedProduct.brand;
-                    _paymentContext.image = selectedProduct.image;
-                    _paymentContext.amount = selectedProduct.price * _paymentContext.qty;
-                    _paymentContext.baseAmount = _paymentContext.amount;
+                } else if (_paymentContext.type === 'buy_now') {
+                    // Refresh product details in case admin edited it during login. Look the
+                    // product up by id — selectedProduct may now be a different product.
+                    const p = products.find(x => String(x.id) === String(_paymentContext.id));
+                    if (p) {
+                        _paymentContext.price = p.price;
+                        _paymentContext.product = p.name;
+                        _paymentContext.brand = p.brand;
+                        _paymentContext.image = p.image;
+                    }
+                    _paymentContext.baseAmount = _paymentContext.price * _paymentContext.qty;
                 }
+                _paymentContext.amount = method === 'cod' ? (_paymentContext.baseAmount + COD_SHIPPING_FEE) : _paymentContext.baseAmount;
+                _paymentContext.shippingFee = method === 'cod' ? COD_SHIPPING_FEE : 0;
             }
 
             const name    = document.getElementById('cm_fullname').value.trim();
@@ -5026,8 +5071,21 @@
             showErr('err_city',    !city);
             showErr('err_state',   !state);
             showErr('err_pincode', !/^\d{6}$/.test(pincode));
+            if (!name) showToast('Please enter your full name.', 'error');
             if (!name || !phone || !address1 || !city || !state || !pincode) valid = false;
             if (!valid) return;
+
+            // ✅ Login gate — AFTER validation, so the customer's details are complete
+            //    and checkout can continue straight to payment once they log in.
+            if (!getActiveSession()) {
+                _pendingCheckoutReturn = true; // resumeCheckoutAfterLogin() picks this up
+                // Hide the checkout overlay WITHOUT calling closeCustomerModal() so
+                // _paymentContext and the typed details survive the login.
+                document.getElementById('orderFormOverlay').classList.remove('open');
+                openAccountModal();
+                showToast('Please log in or sign up to complete your order.', '');
+                return;
+            }
 
             const orderId   = generateOrderId();
             const ctx       = _paymentContext;
@@ -5055,10 +5113,18 @@
                 return;
             }
 
+            // ✅ The live Key ID is saved by the admin in Firestore. On a customer's first
+            //    visit it isn't cached yet, so wait for it instead of falling back to the
+            //    placeholder key ("Razorpay is not configured").
+            const submitBtn = document.getElementById('cmSubmitBtn');
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ Loading payment…'; }
+            var rzpConfig = await loadRazorpayCheckoutConfig();
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '🔒 Proceed to Payment'; }
+            // Customer closed the form while the key was loading.
+            if (_paymentContext !== ctx) return;
+
             // Close customer modal before opening Razorpay
             document.getElementById('orderFormOverlay').classList.remove('open');
-
-            var rzpConfig = getRazorpayCheckoutConfig();
 
             // Open Razorpay directly without a backend order_id
             let rzpOrderId = null;
@@ -5094,10 +5160,11 @@
                 modal: {
                     ondismiss: function() {
                         showToast('Payment cancelled. You can retry from checkout.', '');
-                        openCustomerModal();
+                        reopenCustomerModal();
                     }
                 },
                 handler: async function(response) {
+                    document.getElementById('orderFormOverlay').classList.remove('open');
                     // Client-side verification: Razorpay only returns a pay_XXXX payment ID
                     // when the payment is genuinely authorized, so checking startsWith('pay_')
                     // is sufficient for a no-backend setup.
@@ -5124,7 +5191,7 @@
                     const orderSaved = !!(saveResult && (saveResult.saved || saveResult.local || saveResult.backend));
                     if (!orderSaved) {
                         showToast('⚠️ Payment received but order could not be saved. Reference: ' + response.razorpay_payment_id + '. Please contact support.', 'error');
-                        openCustomerModal();
+                        reopenCustomerModal();
                         return;
                     }
 
@@ -5173,14 +5240,14 @@
             if (typeof window.Razorpay !== 'function') {
                 console.error('Razorpay SDK failed to load (window.Razorpay is undefined).');
                 showToast('⚠️ Payment gateway failed to load. Please disable ad blockers and try again.', 'error');
-                openCustomerModal();
+                reopenCustomerModal();
                 return;
             }
 
             // Validate key before opening — catches placeholder/missing keys early
             if (!rzpConfig.key || rzpConfig.key === 'rzp_test_XXXXXXXXXX' || !/^rzp_(test|live)_/.test(rzpConfig.key)) {
                 showToast('⚠️ Razorpay is not configured. Please add your Key ID in Admin → Settings → Razorpay.', 'error');
-                openCustomerModal();
+                reopenCustomerModal();
                 return;
             }
 
@@ -5188,7 +5255,8 @@
             rzp.on('payment.failed', function(response) {
                 var msg = (response.error && response.error.description) ? response.error.description : 'Please try again.';
                 showToast('❌ Payment failed: ' + msg, 'error');
-                openCustomerModal(); // re-open so user can retry
+                // Razorpay keeps its window open so the customer can retry another
+                // method; closing it fires modal.ondismiss, which re-opens the form.
             });
             rzp.open();
         }
@@ -5262,7 +5330,7 @@
             // ✅ FIX #26 (audit): gate all post-save side effects on a successful save flag.
             if (!orderSavedLocally) {
                 showToast('Could not save your order. Please contact support with order ID ' + orderId + '.', 'error');
-                openCustomerModal(); // re-open so user can retry / see order ID
+                reopenCustomerModal(); // re-open so user can retry / see order ID
                 return;
             }
 
@@ -5949,72 +6017,39 @@
 
             // ✅ Initialize new features
             initCookieConsent();
-            initPWA();
             initNewsletterPopup();
             initAccountSession();
         }
 
         // ✅ COOKIE CONSENT
+        //    GA4 sends page_view automatically on every visit (see <head>); the banner
+        //    only switches Consent Mode between granted and denied.
         function initCookieConsent() {
             const choice = localStorage.getItem('vyn_cookie_consent');
             if (!choice) {
                 setTimeout(() => document.getElementById('cookieBanner').classList.add('show'), 1500);
             }
-            // ✅ FIX #6: Removed the duplicate `page_view` fire that previously ran here on
-            //    returning visits where consent was already 'accepted'. Doing so caused GA4
-            //    to record an extra page_view on every page load (in addition to the one
-            //    fired inside acceptCookies() when the user first consented).
-            //    Now `page_view` fires only once — inside acceptCookies() — which is the
-            //    correct behaviour because gtag('config', ..., { send_page_view: false })
-            //    disables the automatic initial page_view, leaving acceptCookies() as the
-            //    single source of truth.
+        }
+        function setAnalyticsConsent(granted) {
+            if (typeof gtag !== 'function') return;
+            const v = granted ? 'granted' : 'denied';
+            gtag('consent', 'update', { analytics_storage: v, ad_storage: v, ad_user_data: v, ad_personalization: v });
         }
         function acceptCookies() {
             localStorage.setItem('vyn_cookie_consent', 'accepted');
             document.getElementById('cookieBanner').classList.remove('show');
             showToast('🍪 Thanks! Analytics cookies enabled.', 'success');
-            if (typeof gtag === 'function') gtag('event', 'page_view', { page_location: location.href });
-            if (typeof fbq === 'function') fbq('track', 'PageView');
+            setAnalyticsConsent(true);
         }
         function declineCookies() {
             localStorage.setItem('vyn_cookie_consent', 'declined');
             document.getElementById('cookieBanner').classList.remove('show');
             showToast('👌 Got it — only essential cookies will be used.', '');
+            setAnalyticsConsent(false);
         }
         function resetCookieConsent() {
             localStorage.removeItem('vyn_cookie_consent');
             document.getElementById('cookieBanner').classList.add('show');
-        }
-
-        // ✅ PWA: Register Service Worker (inline data-URI SW for offline cache of shell)
-        function initPWA() {
-            if (!('serviceWorker' in navigator)) return;
-            // In production: serve sw.js as a separate file from site root.
-            // For demo, we register a tiny inline SW via Blob URL.
-            const swCode = `
-                const CACHE = 'vynox-v1';
-                self.addEventListener('install', e => { self.skipWaiting(); });
-                self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-                self.addEventListener('fetch', e => {
-                    if (e.request.method !== 'GET') return;
-                    e.respondWith(
-                        caches.open(CACHE).then(cache =>
-                            cache.match(e.request).then(cached => {
-                                const network = fetch(e.request).then(resp => {
-                                    if (resp && resp.status === 200 && resp.type === 'basic') cache.put(e.request, resp.clone());
-                                    return resp;
-                                }).catch(() => cached);
-                                return cached || network;
-                            })
-                        )
-                    );
-                });
-            `;
-            try {
-                const blob = new Blob([swCode], { type: 'application/javascript' });
-                const url = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(url).catch(err => console.warn('SW registration failed:', err));
-            } catch (e) { /* ignore */ }
         }
 
         // ✅ NEWSLETTER POPUP after 30s (only if not seen in last 7 days)
@@ -6062,6 +6097,13 @@
     var modal = document.getElementById('accountModal');
     modal.classList.add('closing');
     setTimeout(function(){ modal.classList.remove('open','closing'); }, 300);
+    // Closed without logging in during checkout → bring the order form back (details
+    // intact) instead of stranding the customer, and drop the pending flag so a later
+    // login doesn't pop up this old checkout.
+    if (_pendingCheckoutReturn && !getActiveSession()) {
+        _pendingCheckoutReturn = false;
+        reopenCustomerModal();
+    }
 }
         function initAccountSession() {
             var raw = localStorage.getItem('vynox_session') || sessionStorage.getItem('vynox_session');
@@ -6193,6 +6235,7 @@
             var errEmail = document.getElementById('errAccEmail');
             var errPass  = document.getElementById('errAccPass');
             var loginBtn = document.getElementById('accLoginBtn');
+            if (loginBtn.disabled) return; // already logging in (double click / Enter)
             errEmail.style.display = 'none';
             errPass.style.display  = 'none';
 
@@ -6227,20 +6270,28 @@
                 showToast('Welcome back, ' + userName + '!', 'success');
                 initAccountSession();
                 trackAnalytics('login', { method: 'firebase_email' });
-                if (typeof _pendingCheckoutReturn !== 'undefined' && _pendingCheckoutReturn) {
-                    _pendingCheckoutReturn = false;
+                if (_pendingCheckoutReturn) {
                     closeAccountModal();
-                    // Re-open the checkout form so the user can complete their order
-                    setTimeout(function(){ openCustomerModal(); }, 350);
+                    // Continue the checkout with the details the customer already entered
+                    setTimeout(resumeCheckoutAfterLogin, 350);
                 }
 
             } catch(e) {
-                _bumpLoginAttempts();
-                if (_loginAttempts >= 5) {
-                    _lockLogin(60000);
-                    errPass.textContent = 'Too many attempts. Please wait 60 seconds.';
+                var code = (e && e.code) || '';
+                if (code === 'auth/network-request-failed') {
+                    errPass.textContent = 'Network error. Please check your internet connection and try again.';
+                } else if (code === 'auth/too-many-requests') {
+                    errPass.textContent = 'Too many failed attempts. Please wait a few minutes or reset your password.';
+                } else if (code === 'auth/user-disabled') {
+                    errPass.textContent = 'This account has been disabled. Please contact support.';
                 } else {
-                    errPass.textContent = 'Incorrect email or password. Please try again.';
+                    _bumpLoginAttempts();
+                    if (_loginAttempts >= 5) {
+                        _lockLogin(60000);
+                        errPass.textContent = 'Too many attempts. Please wait 60 seconds.';
+                    } else {
+                        errPass.textContent = 'Incorrect email or password. Please try again.';
+                    }
                 }
                 errPass.style.display = 'block';
             } finally {
@@ -6255,6 +6306,7 @@
             var phone = document.getElementById('accPhone').value.trim();
             var pass  = document.getElementById('accSignUpPass').value;
             var btn   = document.getElementById('accSignUpBtn');
+            if (btn.disabled) return; // already signing up (double click / Enter)
 
             if (!name)  { showToast('Full name is required', 'error'); return; }
             if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Valid email is required', 'error'); return; }
@@ -6272,14 +6324,20 @@
                 // Set display name
                 await user.updateProfile({ displayName: name });
 
-                // Save phone + name to Firestore
+                // Save phone + name to Firestore. The account already exists at this
+                // point, so a rejected profile write must not turn into "Sign up failed"
+                // (a retry would then hit "email already in use").
                 if (typeof db !== 'undefined' && db) {
-                    await db.collection('users').doc(user.uid).set({
-                        name: name,
-                        email: email,
-                        phone: phone,
-                        createdAt: new Date().toISOString()
-                    });
+                    try {
+                        await db.collection('users').doc(user.uid).set({
+                            name: name,
+                            email: email,
+                            phone: phone,
+                            createdAt: new Date().toISOString()
+                        });
+                    } catch (profileErr) {
+                        console.warn('Saving user profile to Firestore failed:', profileErr);
+                    }
                 }
 
                 // Log user in directly after signup
@@ -6288,13 +6346,23 @@
                 showToast('Account created! Welcome, ' + name + '!', 'success');
                 trackAnalytics('sign_up', { method: 'firebase_email' });
                 initAccountSession();
-                setTimeout(function() { closeAccountModal(); }, 1200);
+                if (_pendingCheckoutReturn) {
+                    // Signed up from the checkout login gate → continue to payment
+                    closeAccountModal();
+                    setTimeout(resumeCheckoutAfterLogin, 350);
+                } else {
+                    setTimeout(function() { closeAccountModal(); }, 1200);
+                }
 
             } catch(e) {
                 if (e.code === 'auth/email-already-in-use') {
                     showToast('An account with this email already exists. Try logging in.', 'error');
                 } else if (e.code === 'auth/weak-password') {
                     showToast('Password is too weak. Use at least 6 characters.', 'error');
+                } else if (e.code === 'auth/invalid-email') {
+                    showToast('Please enter a valid email address.', 'error');
+                } else if (e.code === 'auth/network-request-failed') {
+                    showToast('Network error. Please check your connection and try again.', 'error');
                 } else {
                     showToast('Sign up failed: ' + (e.message || 'Please try again.'), 'error');
                 }
@@ -6304,6 +6372,14 @@
             }
         }
 
+
+        // ✅ Enter key submits the visible login / sign-up / forgot-password form
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Enter' || !e.target || e.target.tagName !== 'INPUT') return;
+            if (e.target.closest('#accLoginView')) { e.preventDefault(); accountAuth(); }
+            else if (e.target.closest('#accSignUpView')) { e.preventDefault(); accountSignUp(); }
+            else if (e.target.closest('#accForgotView')) { e.preventDefault(); sendResetLink(); }
+        });
 
         var _resetCooldown = 0;
         async function sendResetLink() {
@@ -7278,7 +7354,7 @@
                     <h3 style="font-size:22px;text-align:center;margin-bottom:4px;">Welcome Back</h3>
                     <p style="color:#666;font-size:14px;text-align:center;margin-bottom:20px;">Login to your Vynox account</p>
                     <div style="position:relative;">
-                        <input type="text" id="accEmail" placeholder="Email or Phone number *" autocomplete="email" style="padding-left:36px;">
+                        <input type="email" id="accEmail" placeholder="Email address *" autocomplete="email" style="padding-left:36px;">
                         <span style="position:absolute;left:12px;top:13px;font-size:16px;">📧</span>
                     </div>
                     <div class="acc-field-error" id="errAccEmail" style="display:none;color:#dc2626;font-size:12px;margin-bottom:6px;"></div>
@@ -9041,6 +9117,39 @@ function showRzpMsg(msg, color) {
     setTimeout(function(){ el.style.display = 'none'; }, 5000);
 }
 
+// ✅ RAZORPAY: getRazorpayConfig() only refreshes the Firestore copy in the background,
+//    so a customer's first checkout saw no Key ID. fetchRazorpayConfig() returns a
+//    promise for it, and the storefront prefetches it on load.
+var _rzpConfigFetch = null;
+function fetchRazorpayConfig() {
+    if (_rzpConfigFetch) return _rzpConfigFetch;
+    if (typeof db === 'undefined' || !db) return Promise.resolve(null);
+    _rzpConfigFetch = db.collection('settings').doc('razorpay_config').get().then(function(doc) {
+        if (!doc.exists) return null;
+        var data = doc.data();
+        try { localStorage.setItem('vynox_razorpay_config', JSON.stringify(data)); } catch(e){}
+        return data;
+    }).catch(function(e) {
+        console.warn('Razorpay config fetch failed:', e);
+        _rzpConfigFetch = null; // allow a retry on the next checkout
+        return null;
+    });
+    return _rzpConfigFetch;
+}
+
+async function loadRazorpayCheckoutConfig() {
+    var cached = safeParseJSON(localStorage.getItem('vynox_razorpay_config') || 'null', null);
+    if (!(cached && cached.keyId)) {
+        await Promise.race([
+            fetchRazorpayConfig(),
+            new Promise(function(resolve){ setTimeout(resolve, 8000); })
+        ]);
+    }
+    return getRazorpayCheckoutConfig();
+}
+
+window._onDOMReady(fetchRazorpayConfig);
+
 // ✅ RAZORPAY: Get dynamic config for checkout
 function getRazorpayCheckoutConfig() {
     var config = getRazorpayConfig();
@@ -9272,16 +9381,18 @@ function applyDrawerFilters() {
     closeFilterDrawer();
 }
 
-// ✅ Detect reset_token in URL for password reset flow
+// ✅ SEO: /?q=term opens search with that term (the WebSite SearchAction in the JSON-LD points here)
 (function() {
-    var params = new URLSearchParams(window.location.search);
-    var token = params.get('reset_token');
-    if (token) {
-        window.addEventListener('DOMContentLoaded', function() {
-            openAccountModal();
-            showResetView(token);
-        });
-    }
+    var q = new URLSearchParams(window.location.search).get('q');
+    if (!q) return;
+    window._onDOMReady(function() {
+        var overlay = document.getElementById('searchOverlay');
+        var input = document.getElementById('searchInput');
+        if (!overlay || !input) return;
+        overlay.style.display = 'flex';
+        input.value = q;
+        handleSearch(q);
+    });
 })();
 
 /* ════════════════════════════════════════════════════════════════════
