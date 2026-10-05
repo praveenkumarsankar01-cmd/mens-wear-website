@@ -243,8 +243,8 @@ const SIZE_GUIDE = (INDEX.match(/<table class="size-guide-table">[\s\S]*?<\/tabl
 const ORG = {
     '@type': 'Organization', '@id': SITE + '/#organization',
     name: 'Vynox', alternateName: 'Vynox Menswear', url: SITE + '/',
-    email: 'info@vynox.com', telephone: '+91-90925-43740',
-    contactPoint: { '@type': 'ContactPoint', telephone: '+91-90925-43740', email: 'info@vynox.com', contactType: 'customer service', areaServed: 'IN', availableLanguage: ['English', 'Hindi'] },
+    email: 'info@vynox.com', telephone: '+91-00000-00000',
+    contactPoint: { '@type': 'ContactPoint', telephone: '+91-00000-00000', email: 'info@vynox.com', contactType: 'customer service', areaServed: 'IN', availableLanguage: ['English', 'Hindi'] },
     sameAs: ['https://www.instagram.com/vynox.menswear/', 'https://www.facebook.com/vynoxmenswear/'],
 };
 const WEBSITE = { '@type': 'WebSite', '@id': SITE + '/#website', name: 'Vynox', url: SITE + '/', publisher: { '@id': ORG['@id'] }, inLanguage: 'en-IN' };
@@ -348,7 +348,7 @@ ${CATEGORY_ORDER.map(k => `     <li><a href="/category/${CATEGORIES[k].slug}/">$
      <li><a href="/privacy-policy/">Privacy Policy</a></li>
      <li><a href="/terms/">Terms of Service</a></li>
      <li><a href="mailto:info@vynox.com">info@vynox.com</a></li>
-     <li><a href="tel:+919092543740">+91 90925 43740</a></li>
+     <li><a href="tel:+910000000000">+91 00000 00000</a></li>
      <li><a href="https://www.instagram.com/vynox.menswear/" rel="noopener">Instagram</a></li>
     </ul>
    </div>
